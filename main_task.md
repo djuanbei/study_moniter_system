@@ -15,7 +15,7 @@ A web-based learning companion system that helps teachers generate assignments, 
 
 ### Default Account
 - Username: `yun`
-- Password: `1984729`
+- Password: `123456`
 - The default teacher must change the password on first login.
 
 ---
@@ -24,6 +24,7 @@ A web-based learning companion system that helps teachers generate assignments, 
 
 ### Visual Style
 - Simple, fresh, and consistent.
+- 网站采用中文 (UI language is Chinese for all user-facing labels, messages, and prompts).
 
 ### Pages
 1. Login
@@ -92,8 +93,7 @@ The system infers current grade and chapter from current date, academic calendar
 | Subject  | Allowed Types                                                      | Constraints                                                       |
 | -------- | ------------------------------------------------------------------ | ----------------------------------------------------------------- |
 | Language | Composition, reading comprehension, expression training            | —                                                                 |
-| Math     | Thinking questions, week-long open thinking problems               | Must avoid computation-intensive questions.                       |
-| Geometry | —                                                                  | Must include diagrams; SVG preferred (Mermaid optional).          |
+| Math     | Thinking questions, week-long open thinking problems               | Must avoid computation-intensive questions. Geometry questions must include diagrams (SVG preferred, Mermaid optional). |
 
 ### Output Format
 - LLM output must be structured JSON.
@@ -237,7 +237,7 @@ Records: login, question generation, grading, export, deletion, account changes.
 
 1. A fresh machine can install and start with `./install.sh`.
 2. Repeated `./install.sh` does not destroy existing data.
-3. Default teacher `yun / 1984729` can log in and is forced to change password.
+3. Default teacher `yun / 123456` can log in and is forced to change password.
 4. Teacher can create students with grade, textbook, and chapter.
 5. System can infer chapter from current time and configuration.
 6. Teacher can generate A/B question sets with configured count, difficulty, and knowledge points.
