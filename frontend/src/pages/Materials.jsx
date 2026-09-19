@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { endpoints } from '../api.js'
+import { endpoints, runJob } from '../api.js'
 import { Card, Empty } from '../components/ui.jsx'
 
 const TYPE_LABELS = {
@@ -128,7 +128,9 @@ export default function Materials() {
                   <td>{STATUS_BADGES[m.status] || m.status}</td>
                   <td className="right" style={{ whiteSpace: 'nowrap' }}>
                     <button className="btn" style={{ marginRight: 6 }} disabled={!!busy}
-                            onClick={() => run(() => endpoints.analyzeMaterial(m.id), '识别完成，请核对章节后发布')}>
+                            onClick={() => run(
+                              () => runJob('MATERIAL_ANALYSIS', { material_id: m.id }, { timeoutMs: 300000 }),
+                              '识别完成，请核对章节后发布')}>
                       识别
                     </button>
                     {m.status === 'analyzed' && (

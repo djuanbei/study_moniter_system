@@ -13,6 +13,11 @@
     "host": "0.0.0.0",
     "port": 8000
   },
+  "jobs": {
+    "enabled": true,
+    "max_concurrent_heavy_jobs": 1,
+    "poll_seconds": 2.0
+  },
   "academic": {
     "school_year_start_month": 9,
     "timezone": "Asia/Shanghai",

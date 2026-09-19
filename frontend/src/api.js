@@ -182,6 +182,9 @@ export const endpoints = {
   confirmHistory: (id, items) => api.post(`/historical/${id}/confirm`, { items }),
   deleteHistory: (id) => api.del(`/historical/${id}`),
 
+  enqueueJob: (job_type, payload = {}) => api.post('/jobs', { job_type, payload }),
+  getJob: (id) => api.get(`/jobs/${id}`),
+
   exportCsv: (id) => api.get(`/archive/students/${id}/csv`),
   exportPdf: (id) => api.get(`/archive/students/${id}/pdf`),
   exportImagesZip: (id) => api.get(`/archive/students/${id}/images.zip`),
@@ -195,4 +198,21 @@ export const endpoints = {
 
   settings: () => api.get('/settings'),
   updateSettings: (config) => api.put('/settings', { config }),
+}
+
+/**
+ * Enqueue a heavy job and poll until it finishes (PRD §82-83 pattern).
+ * Returns the job row on SUCCEEDED; throws on FAILED/CANCELLED/timeout.
+ */
+export async function runJob(jobType, payload = {}, { intervalMs = 1500, timeoutMs = 240000 } = {}) {
+  const job = await api.enqueueJob(jobType, payload)
+  const deadline = Date.now() + timeoutMs
+  for (;;) {
+    const current = await api.getJob(job.id)
+    if (current.status === 'SUCCEEDED') return current
+    if (current.status === 'FAILED') throw new Error(current.error || '任务失败')
+    if (current.status === 'CANCELLED') throw new Error('任务已取消')
+    if (Date.now() > deadline) throw new Error('任务超时，请稍后在任务列表中查看')
+    await new Promise((r) => setTimeout(r, intervalMs))
+  }
 }

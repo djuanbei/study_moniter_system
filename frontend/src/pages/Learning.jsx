@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { endpoints } from '../api.js'
+import { endpoints, runJob } from '../api.js'
 import { Card, Empty } from '../components/ui.jsx'
 
 const ERROR_LABELS = {
@@ -172,7 +172,9 @@ export default function Learning() {
             actions={
               <div className="row" style={{ gap: 8 }}>
                 <button className="btn" disabled={!!busy}
-                        onClick={() => run(() => endpoints.generatePlan(studentId), 'AI 已生成新的学习计划（草稿），请审核')}>
+                        onClick={() => run(
+                          () => runJob('LEARNING_PLAN_GENERATION', { student_id: studentId }),
+                          'AI 已生成新的学习计划（草稿），请审核')}>
                   生成 AI 学习计划
                 </button>
                 <button className="btn" disabled={!!busy}

@@ -33,7 +33,7 @@ from app.models.learning import (
 from app.models.materials import Material
 from app.models.historical import HistoricalAssessment, HistoricalQuestion
 from app.models.students import Chapter, Class, Student, StudentProgress
-from app.models.system import LLMRun, Setting
+from app.models.system import Job, LLMRun, Setting
 
 ALL_MODELS = [
     User,
@@ -98,5 +98,7 @@ __all__ = [
     "HistoricalAssessment",
     "HistoricalQuestion",
     "LLMRun",
+    "Job",
+    "AuditLog",
     "Setting",
 ]

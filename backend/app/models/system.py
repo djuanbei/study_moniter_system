@@ -39,3 +39,33 @@ class Setting(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     key: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     value: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+
+class Job(Base):
+    """Async job (PRD §82–83): heavy work runs serialized in a worker thread.
+
+    States: QUEUED -> RUNNING -> SUCCEEDED | FAILED (retries re-queue);
+    QUEUED jobs can be CANCELLED.
+    """
+
+    __tablename__ = "jobs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(
+        String(16), default="QUEUED", nullable=False, index=True
+    )
+    payload: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    result: Mapped[Optional[dict]] = mapped_column(JSON)
+    error: Mapped[Optional[str]] = mapped_column(Text)
+    attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    max_attempts: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
+    worker_id: Mapped[Optional[str]] = mapped_column(String(64))
+    created_by: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=False), nullable=False, server_default=func.now(), index=True
+    )
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=False))
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=False))

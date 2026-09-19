@@ -9,15 +9,23 @@ context (user, ip, duration, status).
 from __future__ import annotations
 
 import logging
+import os
 import traceback
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import AsyncIterator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.config import PROJECT_ROOT, ensure_runtime_dirs, get_settings
+from app.config import (
+    PROJECT_ROOT,
+    ensure_runtime_dirs,
+    get_business_config,
+    get_settings,
+)
 from app.database import init_db
 from app.logging_config import (
     current_request_id,
@@ -37,6 +45,7 @@ from app.routes import (
     exports,
     grading,
     historical,
+    jobs,
     learning,
     materials,
     questions,
@@ -44,6 +53,7 @@ from app.routes import (
     students,
     submissions,
 )
+from app.services.job_worker import start_worker, stop_worker
 
 
 settings = get_settings()
@@ -57,12 +67,28 @@ logger = logging.getLogger("sms")
 
 init_db()
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # PRD §82–83: one serial job worker per process (heavy jobs off the
+    # request path). Disable with JOBS_WORKER_ENABLED=false on secondary
+    # workers if needed.
+    if os.environ.get("JOBS_WORKER_ENABLED", "true").lower() != "false":
+        poll = float(
+            (get_business_config().get("jobs") or {}).get("poll_seconds", 2.0)
+        )
+        start_worker(poll_seconds=poll)
+    yield
+    stop_worker()
+
+
 app = FastAPI(
     title="学习陪伴系统 / Learning Companion System",
     version="0.1.0",
     docs_url="/api/docs",
     redoc_url=None,
     openapi_url="/api/openapi.json",
+    lifespan=lifespan,
 )
 
 app.add_middleware(CSRFMiddleware)
@@ -94,6 +120,7 @@ app.include_router(learning.router)
 app.include_router(exports.router)
 app.include_router(materials.router)
 app.include_router(historical.router)
+app.include_router(jobs.router)
 app.include_router(archive.router)
 app.include_router(settings_router.router)
 app.include_router(dashboard.router)

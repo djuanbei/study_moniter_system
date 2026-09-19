@@ -444,6 +444,29 @@ class HistoryConfirmIn(BaseModel):
     items: list[HistoryConfirmItemIn]
 
 
+# --- Async jobs (PRD §82–83) ---
+
+class JobEnqueueIn(BaseModel):
+    job_type: str
+    payload: dict[str, Any] = {}
+
+
+class JobOut(BaseModel):
+    id: int
+    job_type: str
+    status: str
+    payload: dict[str, Any]
+    result: Optional[dict[str, Any]]
+    error: Optional[str]
+    attempts: int
+    max_attempts: int
+    created_by: Optional[int]
+    created_at: datetime
+    started_at: Optional[datetime]
+    finished_at: Optional[datetime]
+    model_config = ConfigDict(from_attributes=True)
+
+
 # --- Settings ---
 
 class SettingsOut(BaseModel):

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { endpoints } from '../api.js'
+import { endpoints, runJob } from '../api.js'
 import { Card, Empty } from '../components/ui.jsx'
 
 const ERROR_LABELS = {
@@ -68,12 +68,13 @@ export default function History() {
   async function analyze() {
     if (!materialId || !studentId || !examTitle) { setError('请选择资料、学生并填写试卷标题'); return }
     await run(async () => {
-      const a = await endpoints.analyzeHistory({
+      const job = await runJob('HISTORY_ANALYSIS', {
         material_id: Number(materialId),
         student_id: Number(studentId),
         exam_title: examTitle,
         exam_date: examDate || null,
-      })
+      }, { timeoutMs: 300000 })
+      const a = await endpoints.historyDetail(job.result.assessment_id)
       setDetail(a)
       setEdits({})
       loadList(studentId)
