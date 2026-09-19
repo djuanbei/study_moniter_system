@@ -4,6 +4,7 @@ import { useAuth } from '../auth.jsx'
 const NAV = [
   { to: '/', label: '工作台', icon: '🏠' },
   { to: '/assignments', label: '我的作业', icon: '📝', student: true },
+  { to: '/exams', label: '在线考试', icon: '🎯' },
   { to: '/learning', label: '学习闭环', icon: '🔄', teacher: true },
   { to: '/materials', label: '教材资料', icon: '📚', teacher: true },
   { to: '/history', label: '历史试卷', icon: '🗂️', teacher: true },

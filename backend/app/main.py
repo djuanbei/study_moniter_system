@@ -42,6 +42,7 @@ from app.routes import (
     classes,
     dashboard,
     errors,
+    exams,
     exports,
     grading,
     historical,
@@ -121,6 +122,7 @@ app.include_router(exports.router)
 app.include_router(materials.router)
 app.include_router(historical.router)
 app.include_router(jobs.router)
+app.include_router(exams.router)
 app.include_router(archive.router)
 app.include_router(settings_router.router)
 app.include_router(dashboard.router)

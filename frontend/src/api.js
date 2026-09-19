@@ -185,6 +185,17 @@ export const endpoints = {
   enqueueJob: (job_type, payload = {}) => api.post('/jobs', { job_type, payload }),
   getJob: (id) => api.get(`/jobs/${id}`),
 
+  createExam: (data) => api.post('/exams', data),
+  exams: (studentId) => api.get('/exams' + (studentId ? `?student_id=${studentId}` : '')),
+  examDetail: (id) => api.get(`/exams/${id}`),
+  startExamAttempt: (examId) => api.post(`/exam-attempts/start?exam_id=${examId}`),
+  examAttempts: (studentId) => api.get(`/exam-attempts?student_id=${studentId}`),
+  examAttempt: (id) => api.get(`/exam-attempts/${id}`),
+  examAttemptDetail: (id) => api.get(`/exam-attempts/${id}/detail`),
+  saveExamAnswers: (id, answers) => api.put(`/exam-attempts/${id}/save`, { answers }),
+  submitExam: (id, reason = 'manual') => api.post(`/exam-attempts/${id}/submit`, { reason }),
+  confirmExam: (id, data) => api.post(`/exam-attempts/${id}/confirm`, data),
+
   exportCsv: (id) => api.get(`/archive/students/${id}/csv`),
   exportPdf: (id) => api.get(`/archive/students/${id}/pdf`),
   exportImagesZip: (id) => api.get(`/archive/students/${id}/images.zip`),

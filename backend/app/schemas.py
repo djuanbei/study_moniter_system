@@ -467,6 +467,59 @@ class JobOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# --- Online exams (PRD §73–76) ---
+
+class ExamCreateIn(BaseModel):
+    student_id: int
+    question_set_id: int
+    title: str
+    duration_minutes: int = Field(default=30, ge=1, le=300)
+    total_score: float = Field(default=100.0, ge=1, le=1000)
+
+
+class ExamOut(BaseModel):
+    id: int
+    title: str
+    student_id: int
+    question_set_id: int
+    duration_minutes: int
+    total_score: float
+    status: str
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ExamAttemptOut(BaseModel):
+    id: int
+    exam_id: int
+    student_id: int
+    started_at: datetime
+    last_saved_at: Optional[datetime]
+    deadline: datetime
+    submitted_at: Optional[datetime]
+    status: str
+    submit_reason: Optional[str]
+    score: Optional[float]
+    feedback: Optional[str]
+    answers_json: Optional[dict[str, Any]]
+    per_question: Optional[dict[str, Any]]
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ExamAnswerSaveIn(BaseModel):
+    answers: dict[str, str]
+
+
+class ExamSubmitIn(BaseModel):
+    reason: str = Field(default="manual", pattern="^(manual|time_expired)$")
+
+
+class ExamConfirmIn(BaseModel):
+    final_score: float = Field(ge=0, le=100)
+    feedback: Optional[str] = None
+    per_question: Optional[dict[str, Any]] = None
+
+
 # --- Settings ---
 
 class SettingsOut(BaseModel):
