@@ -13,8 +13,9 @@ from app.deps import get_current_user
 from app.middleware.audit import record_audit
 from app.models.assignments import Assignment, Question, QuestionSet
 from app.models.auth import User
-from app.models.question_bank import QuestionBankItem
+from app.models.question_bank import BankUpdateCandidate, QuestionBankItem
 from app.models.students import Student
+from app.services.bank_update import analyze_gaps, apply_candidate
 from app.services.question_bank import (
     find_duplicate,
     publish_from_question_row,
@@ -323,3 +324,100 @@ def to_assignment(
                  detail={"question_count": len(items)})
     db.commit()
     return {"assignment_id": assignment.id, "question_count": len(items)}
+
+
+# ---------------------------------------------------------------------------
+# Incremental update (PRD §68): analysis -> AI candidates -> parent review
+# ---------------------------------------------------------------------------
+
+class CandidateOut(BaseModel):
+    id: int
+    candidate_type: str
+    target_bank_id: Optional[int]
+    knowledge_point: Optional[str]
+    payload: dict
+    rationale: Optional[str]
+    duplicate_of_id: Optional[int]
+    validation_notes: Optional[str]
+    status: str
+    review_note: Optional[str]
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ReviewIn(BaseModel):
+    note: Optional[str] = None
+
+
+@router.get("/updates/analysis")
+def updates_analysis(
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    _teacher_only(current)
+    return analyze_gaps(db)
+
+
+@router.get("/updates/candidates", response_model=list[CandidateOut])
+def updates_candidates(
+    status: str = Query(default="pending", pattern="^(pending|approved|rejected)$"),
+    limit: int = Query(default=50, ge=1, le=200),
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[BankUpdateCandidate]:
+    _teacher_only(current)
+    return (
+        db.query(BankUpdateCandidate)
+        .filter(BankUpdateCandidate.status == status)
+        .order_by(BankUpdateCandidate.id.desc())
+        .limit(limit)
+        .all()
+    )
+
+
+@router.post("/updates/candidates/{candidate_id}/approve", response_model=CandidateOut)
+def approve_candidate(
+    candidate_id: int,
+    request: Request,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> BankUpdateCandidate:
+    """Parent confirmation mutates the bank (§68 final step)."""
+    _teacher_only(current)
+    candidate = db.get(BankUpdateCandidate, candidate_id)
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+    try:
+        apply_candidate(db, candidate, user=current)
+    except ValueError as exc:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    record_audit(db, action="bank_candidate_approve", user=current, request=request,
+                 target_type="bank_update_candidate", target_id=candidate.id,
+                 detail={"type": candidate.candidate_type, "note": candidate.review_note})
+    db.commit()
+    db.refresh(candidate)
+    return candidate
+
+
+@router.post("/updates/candidates/{candidate_id}/reject", response_model=CandidateOut)
+def reject_candidate(
+    candidate_id: int,
+    payload: ReviewIn,
+    request: Request,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> BankUpdateCandidate:
+    _teacher_only(current)
+    candidate = db.get(BankUpdateCandidate, candidate_id)
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+    if candidate.status != "pending":
+        raise HTTPException(status_code=400, detail="该候选已处理")
+    candidate.status = "rejected"
+    candidate.reviewed_by = current.id
+    candidate.review_note = payload.note
+    record_audit(db, action="bank_candidate_reject", user=current, request=request,
+                 target_type="bank_update_candidate", target_id=candidate.id)
+    db.commit()
+    db.refresh(candidate)
+    return candidate

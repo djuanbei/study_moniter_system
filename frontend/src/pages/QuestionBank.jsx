@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { endpoints } from '../api.js'
+import { endpoints, runJob } from '../api.js'
 import { Card, Empty } from '../components/ui.jsx'
+
+const CANDIDATE_LABELS = { ADD: '新增', MODIFY: '修改', REPLACE: '替换', DEPRECATE: '废弃' }
 
 export default function QuestionBank() {
   const [items, setItems] = useState([])
@@ -16,6 +18,13 @@ export default function QuestionBank() {
   const [assignStudent, setAssignStudent] = useState('')
   const [assignTitle, setAssignTitle] = useState('')
   const [fromSetId, setFromSetId] = useState('')
+  const [analysis, setAnalysis] = useState(null)
+  const [candidates, setCandidates] = useState([])
+
+  function loadUpdates() {
+    endpoints.bankUpdateAnalysis().then(setAnalysis).catch(() => {})
+    endpoints.bankCandidates('pending').then(setCandidates).catch(() => {})
+  }
 
   function load() {
     endpoints.bankList({ knowledge_point: kp || undefined, q: q || undefined })
@@ -26,6 +35,7 @@ export default function QuestionBank() {
     load()
     endpoints.students().then(setStudents).catch(() => {})
     endpoints.listSets().then(setSets).catch(() => {})
+    loadUpdates()
   }, [])
 
   async function run(action, okMsg) {
@@ -34,6 +44,7 @@ export default function QuestionBank() {
       await action()
       setMsg(okMsg)
       load()
+      loadUpdates()
     } catch (e) {
       setError(e.message)
     } finally {
@@ -83,6 +94,68 @@ export default function QuestionBank() {
           </select>
           <button className="btn" disabled={!!busy} onClick={publishFromSet}>发布到题库</button>
         </div>
+      </Card>
+
+      <Card
+        title="题库更新（AI 增量维护，PRD §68）"
+        actions={
+          <button className="btn" disabled={!!busy}
+                  onClick={() => run(
+                    () => runJob('QUESTION_BANK_UPDATE', { batch_size: 3 }, { timeoutMs: 300000 }),
+                    'AI 分析完成，请审核下方候选（入库前需家长确认）')}>
+            AI 分析并生成候选
+          </button>
+        }
+      >
+        {analysis && (
+          <div className="muted mb-2" style={{ fontSize: 13 }}>
+            题库 {analysis.bank_size} 题 · 知识点覆盖 {analysis.covered_kp}/{analysis.kp_total} ·
+            重复对 {analysis.duplicates.length} · 覆盖缺口 {analysis.gaps.length}
+            {analysis.gaps.length > 0 && `（最缺：${analysis.gaps.slice(0, 3).map((g) => g.knowledge_point).join('、')}）`}
+          </div>
+        )}
+        {candidates.length === 0 ? <Empty>暂无待审核候选</Empty> : (
+          <table className="table">
+            <thead><tr><th>类型</th><th>内容</th><th>依据</th><th>校验</th><th></th></tr></thead>
+            <tbody>
+              {candidates.map((c) => (
+                <tr key={c.id}>
+                  <td><span className={'badge ' + (c.candidate_type === 'ADD' ? 'badge-primary' : 'badge-warn')}>
+                    {CANDIDATE_LABELS[c.candidate_type] || c.candidate_type}
+                  </span></td>
+                  <td style={{ maxWidth: 340 }}>
+                    {c.candidate_type === 'ADD' ? (
+                      <div>
+                        <div style={{ whiteSpace: 'pre-wrap' }}>{c.payload.prompt}</div>
+                        <div className="muted" style={{ fontSize: 12 }}>答：{c.payload.answer || '—'}</div>
+                      </div>
+                    ) : (
+                      <div>废弃题目 #{c.target_bank_id}（{c.payload.reason}）</div>
+                    )}
+                  </td>
+                  <td className="muted" style={{ fontSize: 12, maxWidth: 220 }}>{c.rationale}</td>
+                  <td>
+                    {c.duplicate_of_id
+                      ? <span className="badge badge-warn">与 #{c.duplicate_of_id} 重复</span>
+                      : c.validation_notes
+                        ? <span className="badge badge-warn">{c.validation_notes}</span>
+                        : <span className="badge badge-success">通过</span>}
+                  </td>
+                  <td className="right" style={{ whiteSpace: 'nowrap' }}>
+                    <button className="btn btn-primary" style={{ marginRight: 6 }} disabled={!!busy}
+                            onClick={() => run(() => endpoints.bankApproveCandidate(c.id), '已应用到题库')}>
+                      确认
+                    </button>
+                    <button className="btn-ghost" disabled={!!busy}
+                            onClick={() => run(() => endpoints.bankRejectCandidate(c.id), '已拒绝')}>
+                      拒绝
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </Card>
 
       <Card

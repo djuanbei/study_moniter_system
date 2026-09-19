@@ -72,3 +72,31 @@ class QuestionVersion(Base):
     )
 
     question: Mapped[QuestionBankItem] = relationship("QuestionBankItem", back_populates="versions")
+
+
+class BankUpdateCandidate(Base, TimestampMixin):
+    """PRD §68 — AI-proposed bank change awaiting parent review.
+
+    candidate_type: ADD | MODIFY | REPLACE | DEPRECATE (§68).
+    payload: question fields (ADD/REPLACE/MODIFY) or {"reason": ...} for DEPRECATE.
+    """
+
+    __tablename__ = "bank_update_candidates"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_type: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    target_bank_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("question_bank.id", ondelete="SET NULL")
+    )
+    knowledge_point: Mapped[Optional[str]] = mapped_column(String(128), index=True)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    rationale: Mapped[Optional[str]] = mapped_column(Text)
+    duplicate_of_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("question_bank.id", ondelete="SET NULL")
+    )
+    validation_notes: Mapped[Optional[str]] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(16), default="pending", nullable=False, index=True)
+    reviewed_by: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    review_note: Mapped[Optional[str]] = mapped_column(String(255))

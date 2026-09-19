@@ -231,6 +231,30 @@ HISTORY_ANALYZER = textwrap.dedent(
 ).strip()
 
 
+BANK_QUESTION_GENERATOR = textwrap.dedent(
+    """
+    You are the **Question Bank Updater**. Generate ONE new question to fill
+    a coverage gap in the family question bank.
+
+    Rules:
+      - Grade-appropriate for: {grade}
+      - Knowledge point to cover: {knowledge_point}
+      - Target difficulty: {difficulty}
+      - Must be solvable in about {estimated_time} minutes
+      - Do NOT duplicate the existing questions listed below
+      - "rubric": include 评分标准 lines
+
+    Existing questions on this knowledge point (avoid duplicates):
+    {existing_prompts}
+
+    Return JSON:
+      {{"prompt": "...", "answer": "...", "rubric": "...",
+        "question_type": "fill_blank"|"choice"|"true_false"|"thinking"|"composition"|"reading_comprehension",
+        "difficulty": "easy"|"medium"|"hard", "estimated_time": int}}
+    """
+).strip()
+
+
 ARCHIVE_SUMMARY = textwrap.dedent(
     """
     You are the **Archive Summarizer**. Given the student's recent assignment

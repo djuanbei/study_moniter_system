@@ -214,6 +214,11 @@ export const endpoints = {
   bankSimilar: (id) => api.get(`/question-bank/${id}/similar`),
   bankFromSet: (data) => api.post('/question-bank/from-set', data),
   bankToAssignment: (data) => api.post('/question-bank/to-assignment', data),
+  bankUpdateAnalysis: () => api.get('/question-bank/updates/analysis'),
+  bankCandidates: (status = 'pending') =>
+    api.get(`/question-bank/updates/candidates?status=${status}`),
+  bankApproveCandidate: (id) => api.post(`/question-bank/updates/candidates/${id}/approve`),
+  bankRejectCandidate: (id, note) => api.post(`/question-bank/updates/candidates/${id}/reject`, { note }),
 
   exportCsv: (id) => api.get(`/archive/students/${id}/csv`),
   exportPdf: (id) => api.get(`/archive/students/${id}/pdf`),

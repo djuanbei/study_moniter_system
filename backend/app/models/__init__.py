@@ -33,7 +33,7 @@ from app.models.learning import (
 from app.models.materials import Material
 from app.models.historical import HistoricalAssessment, HistoricalQuestion
 from app.models.exams import Exam, ExamAttempt
-from app.models.question_bank import QuestionBankItem, QuestionVersion
+from app.models.question_bank import BankUpdateCandidate, QuestionBankItem, QuestionVersion
 from app.models.students import Chapter, Class, Student, StudentProgress
 from app.models.system import Job, LLMRun, Setting
 
@@ -103,6 +103,7 @@ __all__ = [
     "ExamAttempt",
     "QuestionBankItem",
     "QuestionVersion",
+    "BankUpdateCandidate",
     "LLMRun",
     "Job",
     "AuditLog",

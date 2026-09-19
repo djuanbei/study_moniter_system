@@ -136,6 +136,16 @@ def run_history_analysis(db: Session, payload: dict, user_id: Optional[int]) -> 
     }
 
 
+@register("QUESTION_BANK_UPDATE")
+def run_bank_update(db: Session, payload: dict, user_id: Optional[int]) -> dict:
+    """§68: analysis + AI candidates; parent reviews before anything is applied."""
+    from app.services.bank_update import generate_candidates
+
+    return generate_candidates(
+        db, batch_size=int(payload.get("batch_size", 3)), user=None
+    )
+
+
 # ---------------------------------------------------------------------------
 # Claim / run loop
 # ---------------------------------------------------------------------------

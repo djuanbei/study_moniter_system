@@ -545,3 +545,70 @@ def stage_history_analysis(
             error=str(exc),
         )
         return None, None
+
+
+# ---------------------------------------------------------------------------
+# Stage 11: Question bank update (PRD §68)
+# ---------------------------------------------------------------------------
+
+def stage_bank_question(
+    db: Session,
+    *,
+    knowledge_point: str,
+    grade: Optional[str],
+    difficulty: str,
+    estimated_time: int,
+    existing_prompts: list[str],
+    user: Optional[User],
+) -> Optional[dict]:
+    """Generate one candidate question for a coverage gap (§68).
+
+    Returns the question-fields dict, or None on failure.
+    """
+    from app.services.llm.prompts import BANK_QUESTION_GENERATOR
+
+    prompt = BANK_QUESTION_GENERATOR.format(
+        grade=grade or "(未指定)",
+        knowledge_point=knowledge_point,
+        difficulty=difficulty,
+        estimated_time=estimated_time,
+        existing_prompts="\n".join(f"- {p[:120]}" for p in existing_prompts[:10]) or "（无）",
+    )
+    llm = get_chat_model(purpose="question_bank_update")
+    started = time.time()
+    try:
+        msg = llm.invoke(
+            [
+                SystemMessage(content="You are a deterministic assistant. Return ONLY JSON."),
+                HumanMessage(content=prompt),
+            ]
+        )
+        duration = int((time.time() - started) * 1000)
+        parsed = _safe_json_loads(msg.content)
+        out = parsed if isinstance(parsed, dict) else {"value": parsed}
+        _record_run(
+            db,
+            agent="question_bank_update",
+            purpose="question_bank_update",
+            prompt=prompt,
+            output=out,
+            user_id=user.id if user else None,
+            duration_ms=duration,
+        )
+        if not out.get("prompt"):
+            return None
+        return out
+    except Exception as exc:  # noqa: BLE001
+        duration = int((time.time() - started) * 1000)
+        _record_run(
+            db,
+            agent="question_bank_update",
+            purpose="question_bank_update",
+            prompt=prompt,
+            output=None,
+            user_id=user.id if user else None,
+            duration_ms=duration,
+            status="error",
+            error=str(exc),
+        )
+        return None

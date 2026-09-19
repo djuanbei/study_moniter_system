@@ -3,6 +3,7 @@
 from app.services.llm.agent import (
     generate_two_sets,
     stage_archive_summary,
+    stage_bank_question,
     stage_curriculum_planning,
     stage_diagram_generation,
     stage_grading,
@@ -30,4 +31,5 @@ __all__ = [
     "stage_learning_plan",
     "stage_material_analysis",
     "stage_history_analysis",
+    "stage_bank_question",
 ]
