@@ -1,32 +1,137 @@
 # 学习陪伴系统（Learning Companion System）
 
-## 完整产品需求文档 PRD v6.0
+## 完整产品需求文档 PRD v7.0
 
 ---
 
-# 1. 产品概述
+# 1. 产品定位
 
 ## 1.1 产品名称
 
-**Learning Companion System（学习陪伴系统）**
+**Learning Companion System**
 
-## 1.2 产品定位
+中文名称：
 
-一个面向小规模教学场景的：
+> **学习陪伴系统**
 
-> **教材驱动、AI 协助出题、AI 协助批改、学生知识状态驱动、教师确认、持续学习闭环系统。**
+---
 
-系统核心不是单纯：
+# 2. 产品核心定位
 
-* AI 出题
-* AI 批改
-* 题库
-* 在线考试
-* OCR
+系统面向：
 
-而是把这些能力连接起来：
+* 家长
+* 学生
+* 家庭学习场景
+
+核心目标：
+
+> **让家长不需要自己大量找教材、找题、出题、批改、分析错题和制定学习计划，而由 AI 协助完成这些工作，家长负责监督、确认和关键决策。**
+
+系统不是：
 
 ```text
+AI 自动教学
+```
+
+也不是：
+
+```text
+AI 完全替代家长
+```
+
+而是：
+
+```text
+家长
+ ↓
+AI 学习助手
+ ↓
+学生
+```
+
+---
+
+# 3. 核心角色
+
+## 3.1 家长
+
+家长是系统的主要管理者和学习陪伴者。
+
+负责：
+
+```text
+学习目标设置
+教材选择
+学习计划确认
+AI 出题审核
+AI 批改审核
+重要错误确认
+学习结果查看
+学习策略调整
+```
+
+不要求家长承担大量重复工作。
+
+---
+
+# 3.2 学生
+
+学生是实际学习者。
+
+负责：
+
+```text
+学习
+阅读教材
+完成练习
+完成作业
+参加考试
+查看反馈
+订正错误
+完成复习
+```
+
+---
+
+# 3.3 Admin
+
+小规模系统中可以由家长兼任。
+
+主要用于：
+
+```text
+系统配置
+账号管理
+LLM 配置
+文件管理
+日志
+备份
+```
+
+---
+
+# 4. 产品核心理念
+
+系统核心不是：
+
+```text
+题库
+```
+
+也不是：
+
+```text
+AI 出题
+```
+
+而是：
+
+> **学生知识状态的持续改善。**
+
+核心闭环：
+
+```text id="8g0zq7"
 教材
  ↓
 知识点
@@ -35,170 +140,176 @@
  ↓
 学习目标
  ↓
+AI 学习规划
+ ↓
 AI 协助出题
  ↓
 学生作答
  ↓
 AI 协助批改
  ↓
-教师确认
+家长确认
  ↓
 学习证据
  ↓
 学生知识状态更新
  ↓
-下一轮 AI 出题
+下一轮学习
 ```
 
 ---
 
-# 2. 产品核心目标
+# 5. 家长角色的核心设计
 
-系统需要解决两个核心问题：
-
-## 问题 A：如何更好地出题？
-
-根据：
-
-* 教材
-* 当前章节
-* 知识点
-* 学生掌握情况
-* 学生错误类型
-* 历史题目
-* 学习目标
-
-由 AI **辅助教师生成合适的题目**。
-
----
-
-## 问题 B：如何更高效地批改？
-
-根据：
-
-* 题目
-* 标准答案
-* Rubric
-* 学生答案
-* OCR / Vision 结果
-
-由 AI **辅助教师批改**。
-
----
-
-# 3. AI 的定位
-
-AI 是：
-
-> **Teacher Assistant，而不是 Teacher Replacement。**
-
-AI 可以：
+传统教师系统：
 
 ```text
-生成
-分析
-识别
-建议
+教师
+ ↓
+出题
+ ↓
 批改
-归类
-推荐
+ ↓
+分析
 ```
 
-但不能默认：
+本系统：
 
 ```text
-AI = 最终教师判断
+AI
+ ↓
+出题建议
+ ↓
+AI 批改
+ ↓
+家长确认
 ```
 
-核心原则：
+家长的工作从：
+
+> “做所有事情”
+
+变成：
+
+> **“审核 AI 的关键决策，并陪伴孩子学习。”**
+
+---
+
+# 6. 家长工作量目标
+
+每天家长原则上只需要：
+
+```text id="0x2a2j"
+查看今日学习计划
+        ↓
+确认 AI 推荐任务
+        ↓
+必要时检查 AI 批改
+        ↓
+查看孩子学习状态
+```
+
+例如：
 
 ```text
-AI Suggestion
-      ↓
-Teacher Review
-      ↓
-Official Result
+今日学习：
+
+数学
+一元一次方程应用题
+25 分钟
+
+AI 已生成：
+6 道题
+
+预计：
+5 道自动批改
+1 道建议家长确认
+```
+
+家长只需要点击：
+
+```text
+确认学习计划
+```
+
+学习结束后：
+
+```text
+AI：
+6 道题完成
+
+4 道正确
+1 道计算错误
+1 道建模错误
+
+需要家长确认：
+1 道
+```
+
+家长查看后确认。
+
+---
+
+# 7. 产品核心闭环
+
+完整闭环：
+
+```text id="x1yk6w"
+                  家长
+                    │
+                    ↓
+                学习目标
+                    │
+                    ↓
+                  AI
+                    │
+              学习规划
+                    ↓
+              AI 协助出题
+                    ↓
+                  学生
+                    ↓
+                 作答
+                    ↓
+             OCR / Vision
+                    ↓
+             AI 协助批改
+                    ↓
+                  家长
+                    ↓
+                确认结果
+                    ↓
+            Learning Evidence
+                    ↓
+         Student Knowledge State
+                    ↓
+              下一轮规划
+                    ↓
+              AI 再次出题
 ```
 
 ---
 
-# 4. 核心学习闭环
+# 8. 部署规模
 
-系统完整闭环：
+系统目标：
 
 ```text
-教材 / 课程
-      ↓
-知识体系
-      ↓
-学生知识状态
-      ↓
-学习目标
-      ↓
-AI 协助出题
-      ↓
-作业 / 练习 / 考试
-      ↓
-学生作答
-      ↓
-OCR / Vision
-      ↓
-AI 协助批改
-      ↓
-教师确认
-      ↓
-Learning Evidence
-      ↓
-学生知识状态更新
-      ↓
-下一轮学习目标
-      ↓
-AI 协助出题
+家庭数量：1
+学生：1–5
+家长：1–5
 ```
 
-最终形成：
-
-> **AI 出题 → 学生学习 → AI 批改 → 教师确认 → 状态更新 → AI 再出题**
-
----
-
-# 5. 产品核心数据闭环
-
-系统核心不是“题目”，而是：
+或者小规模：
 
 ```text
-Student
-   ↓
-Student Knowledge State
-   ↓
-Learning Objective
-   ↓
-Learning Plan
-   ↓
-Question
-   ↓
-Student Answer
-   ↓
-AI Grading
-   ↓
-Teacher Confirmation
-   ↓
-Learning Evidence
-   ↓
-Student Knowledge State
+学生 < 5
 ```
 
----
-
-# 6. 部署规模
-
-目标规模：
+同时在线用户：
 
 ```text
-教师：1–2
-学生：< 5
-班级：1–2
-在线用户：≤ 5
+≤ 5
 ```
 
 部署：
@@ -207,291 +318,282 @@ Student Knowledge State
 Single Machine
 ```
 
-不是大型 SaaS。
-
 ---
 
-# 7. 硬件约束
+# 9. 硬件要求
 
-最低目标：
+最低运行环境：
 
 ```text
 CPU：2 cores
 RAM：4 GB
-GPU：None
+GPU：无
 ```
 
-系统核心功能不得依赖 GPU。
+操作系统：
+
+```text
+Ubuntu
+macOS
+```
+
+核心业务不得依赖 GPU。
 
 ---
 
-# 8. CPU-only 架构
+# 10. AI 架构
 
-```text
-Browser
-   ↓
-React
-   ↓
-FastAPI
-   ↓
-SQLite
-   ↓
-Job Queue
-   ↓
-AI / OCR / Vision
-```
+由于只有 2 CPU + 4 GB RAM：
 
-AI 优先使用：
+不要求本地运行大型 LLM。
 
-```text
-External OpenAI-compatible API
-```
-
-本地不要求运行大型 LLM。
-
----
-
-# 9. 技术栈
-
-## Backend
-
-```text
-Python
-FastAPI
-SQLAlchemy
-Alembic
-SQLite
-```
-
-## Frontend
+推荐：
 
 ```text
 React
-TypeScript
-Vite
-```
-
-## AI
-
-```text
-LLM
-Vision
-OCR
-Embedding
-```
-
-## Documents
-
-```text
-PDF
-DOCX
-SVG
-PNG
-JPEG
-WebP
-```
-
----
-
-# 10. 数据库
-
-使用：
-
-```text
-SQLite + WAL
-```
-
-原因：
-
-* 小规模
-* 单机
-* 低并发
-* 易部署
-* 4GB RAM
-* 不需要 PostgreSQL
-
-大型文件不得直接存入 SQLite BLOB。
-
----
-
-# 11. 用户角色
-
-```text
-ADMIN
-TEACHER
-STUDENT
-```
-
-小型部署允许：
-
-```text
-ADMIN = TEACHER
-```
-
----
-
-# 12. 登录
-
-默认教师：
-
-```text
-username = yun
-```
-
-密码：
-
-```text
-.env
-
-PASS_WORD=
-```
-
-密码不得提交 Git。
-
-首次登录：
-
-```text
-Login
  ↓
-Force Password Change
+FastAPI
+ ↓
+SQLite
+ ↓
+Async Job Worker
+ ↓
+External LLM API
 ```
 
-使用：
+外部 API：
 
 ```text
-Argon2 / bcrypt
-HttpOnly Cookie
-CSRF
-RBAC
-```
-
----
-
-# 13. Teacher 页面
-
-```text
-Dashboard
-
-Students
-Classes
-Student Archive
-
-Textbooks
-Materials
-
-Knowledge Points
-Knowledge Graph
-
-AI Question Generation
-Question Bank
-Question Sets
-Similar Questions
-
-Learning Diagnosis
-Learning Plans
-Learning Sessions
-
-Assignments
-Exams
-Exam Editor
-
-Submissions
-AI Grading
-Teacher Review
-
-Learning Analysis
-
-Material Agent
-Knowledge Update
-Question Bank Update
-
-PDF Export
-DOCX Export
-
-Settings
-Audit
+OpenAI-compatible API
 ```
 
 ---
 
-# 14. Student 页面
+# 11. AI 的两个一级能力
+
+系统 AI 最重要的两个功能：
 
 ```text
-Dashboard
+① AI 协助出题
 
+② AI 协助批改
+```
+
+其他 AI 能力：
+
+```text
+OCR
+Vision
+学习诊断
+学习计划
+知识点分析
+错因分析
+题库更新
+教材分析
+```
+
+都服务于这两个核心流程和学习闭环。
+
+---
+
+# 12. AI 的角色
+
+AI：
+
+```text
+分析者
+生成者
+助手
+建议者
+```
+
+不是：
+
+```text
+最终教师
+```
+
+原则：
+
+```text id="2d4r8y"
+AI
+ ↓
+Suggestion
+ ↓
+Parent Review
+ ↓
+Official Result
+```
+
+---
+
+# 13. 家长 Dashboard
+
+首页显示：
+
+```text
+孩子
+今日学习
+当前目标
+当前章节
+知识掌握
+薄弱点
+今日任务
+待家长确认
+近期考试
+学习趋势
+```
+
+例如：
+
+```text
+小明
+
+今日学习：
+数学 / 一元一次方程
+
+预计：
+25 分钟
+
+当前掌握：
+72%
+
+主要薄弱点：
+应用题建模
+
+AI 建议：
+完成 6 道练习
+
+待家长确认：
+1 项
+```
+
+---
+
+# 14. Student Dashboard
+
+学生首页：
+
+```text
 Today's Learning
 Learning Plan
-
 Assignments
 Exams
-Online Exam
-
-Answer Submission
-
-Grades
-AI/Teacher Feedback
-
+Practice
 Knowledge Progress
+Mistakes
+Feedback
 Learning Archive
 ```
+
+核心问题：
+
+> **“我今天应该学习什么？”**
 
 ---
 
 # 15. Student Profile
 
-字段：
-
 ```text
 student_id
 name
 grade
+school
 class
+textbook
 textbook_version
 current_chapter
-
-strengths
-weak_points
-notes
-score_history
 ```
 
-可选：
+以及：
 
 ```text
-parent_contact
+learning_goal
+strengths
+weak_points
+score_history
+notes
 ```
 
 ---
 
-# 16. 教材体系
+# 16. 学习目标
+
+家长可以设置：
 
 ```text
-Curriculum
-    ↓
+长期目标
+阶段目标
+章节目标
+知识点目标
+考试目标
+```
+
+例如：
+
+```text
+目标：
+掌握一元一次方程应用题
+
+当前：
+0.35
+
+目标：
+0.80
+```
+
+---
+
+# 17. Learning Objective
+
+数据库实体：
+
+```text
+LearningObjective
+```
+
+字段：
+
+```text
+objective_id
+student_id
+knowledge_point_id
+description
+current_mastery
+target_mastery
+priority
+deadline
+status
+```
+
+---
+
+# 18. 教材体系
+
+```text
 Textbook
-    ↓
+ ↓
 TextbookVersion
-    ↓
+ ↓
 Chapter
-    ↓
+ ↓
 Section
-    ↓
+ ↓
 KnowledgePoint
 ```
 
----
-
-# 17. 教材管理
-
-教师可以：
+家长可以选择：
 
 ```text
-选择教材
-上传教材
-创建教材版本
-管理章节
-查看教材
+教材
+年级
+版本
+章节
 ```
+
+---
+
+# 19. 教材导入
 
 支持：
 
@@ -504,32 +606,37 @@ PNG
 WebP
 ```
 
+可以：
+
+```text
+上传教材
+上传章节
+上传练习册
+上传学习资料
+```
+
 ---
 
-# 18. 扫描教材 OCR
+# 20. 扫描教材
 
 流程：
 
 ```text
-Scanned PDF
- ↓
-Page Extraction
+扫描 PDF
  ↓
 OCR
  ↓
 Layout Analysis
  ↓
-Chapter Detection
+章节识别
  ↓
-Section Detection
+小节识别
  ↓
-Formula Detection
+公式识别
  ↓
-Image Detection
+图片识别
  ↓
-Table Detection
- ↓
-Knowledge Point Extraction
+知识点提取
 ```
 
 保存：
@@ -544,7 +651,7 @@ Page Number
 
 ---
 
-# 19. Material
+# 21. Material
 
 类型：
 
@@ -556,27 +663,27 @@ WORKSHEET
 EXAM
 ANSWER_KEY
 SOLUTION
-TEACHER_NOTE
+PARENT_NOTE
 OTHER
 ```
 
 来源：
 
 ```text
-MANUAL
 UPLOADED
 IMPORTED
 AGENT_DISCOVERED
+MANUAL
 ```
 
 ---
 
-# 20. Material Agent
+# 22. Material Agent
 
-Material Agent 可以定期发现：
+系统可以定期寻找：
 
 ```text
-教材相关材料
+教材相关公开资料
 公开练习
 公开试卷
 公开答案
@@ -586,17 +693,17 @@ Material Agent 可以定期发现：
 流程：
 
 ```text
-Textbook
+教材
  ↓
 Material Agent
  ↓
-Search
+Internet Search
  ↓
-Material Candidate
+Candidate
  ↓
 Validation
  ↓
-Teacher Review
+Parent Review
  ↓
 Material Library
 ```
@@ -609,32 +716,24 @@ auto_import = false
 
 ---
 
-# 21. Internet Material
+# 23. Copyright
 
-保存：
+网络材料保存：
 
 ```text
 URL
 domain
 retrieved_at
 content_hash
-source_metadata
 license
+source_metadata
 ```
 
-网络发现的材料默认：
-
-```text
-NOT_OFFICIAL
-```
-
-教师确认之后才能进入正式材料体系。
+第三方材料不自动公开重新发布。
 
 ---
 
-# 22. Knowledge Point
-
-实体：
+# 24. Knowledge Point
 
 ```text
 KnowledgePoint
@@ -657,7 +756,7 @@ status
 
 ---
 
-# 23. 知识点示例
+# 25. 知识点示例
 
 ```text
 数学
@@ -671,24 +770,9 @@ status
 
 ---
 
-# 24. Knowledge Point Version
+# 26. Student Knowledge State
 
-知识点必须版本化：
-
-```text
-v1
-v2
-v3
-...
-```
-
-历史学习证据引用具体版本。
-
----
-
-# 25. 学生知识状态
-
-核心实体：
+系统核心实体：
 
 ```text
 StudentKnowledgeState
@@ -709,7 +793,9 @@ decay_risk
 status
 ```
 
-例如：
+---
+
+# 27. Knowledge State 示例
 
 ```text
 一元一次方程
@@ -718,20 +804,20 @@ confidence = 0.88
 trend = improving
 
 移项
-mastery = 0.61
+mastery = 0.91
+confidence = 0.94
 
 应用题建模
 mastery = 0.34
+confidence = 0.79
 trend = declining
 ```
 
 ---
 
-# 26. Knowledge State History
+# 28. Knowledge State History
 
-状态不能覆盖。
-
-保存：
+每一次变化必须保存历史：
 
 ```text
 StudentKnowledgeStateHistory
@@ -740,59 +826,33 @@ StudentKnowledgeStateHistory
 例如：
 
 ```text
-01-01    0.35
-01-10    0.47
-01-20    0.58
-02-01    0.71
+01-01  0.35
+01-10  0.47
+01-20  0.58
+02-01  0.71
 ```
 
 ---
 
-# 27. Learning Objective
+# 29. 学习诊断
 
-定义学习目标：
-
-```text
-LearningObjective
-```
-
-例如：
-
-```text
-Knowledge:
-一元一次方程应用题
-
-Current:
-0.34
-
-Target:
-0.80
-```
-
-每一个重要学习任务都应该能够追溯到一个 Learning Objective。
-
----
-
-# 28. Learning Diagnosis
-
-系统根据：
+输入：
 
 ```text
 Student Knowledge State
-+
 Learning Evidence
-+
-Error Patterns
-+
-Curriculum
-+
-Teacher Feedback
+Error Pattern
+Recent Performance
+Learning Goal
 ```
 
-生成：
+输出：
 
 ```text
-Diagnosis
+Weak Knowledge
+Error Pattern
+Learning Priority
+Suggested Intervention
 ```
 
 例如：
@@ -810,110 +870,72 @@ Priority 3:
 
 ---
 
-# 29. Learning Planner
+# 30. Learning Planner
 
-核心 Agent：
-
-```text
-Learning Planner Agent
-```
-
-输入：
+AI 学习规划：
 
 ```text
-StudentKnowledgeState
-LearningEvidence
-ErrorPatterns
-LearningObjectives
-Textbook
-QuestionBank
-TeacherConstraints
+Student State
++
+Learning Goal
++
+Available Material
++
+Question Bank
++
+Past Evidence
 ```
 
 输出：
 
 ```text
-LearningPlan
+Learning Plan
 ```
 
 ---
 
-# 30. Learning Plan
+# 31. Learning Plan
 
 例如：
 
 ```text
-学生：
-S001
-
 目标：
-掌握一元一次方程应用题
+掌握应用题
 
-Current:
-0.34
-
-Target:
-0.80
-```
-
-计划：
-
-```text
-Day 1:
+Day 1：
 概念复习
 
-Day 2:
+Day 2：
 简单应用题
 
-Day 3:
+Day 3：
 变式题
 
-Day 4:
+Day 4：
 综合题
 
-Day 5:
+Day 5：
 Mini Test
 ```
 
----
-
-# 31. Learning Intervention
-
-支持：
+家长可以：
 
 ```text
-EXPLANATION
-EXAMPLE
-PRACTICE
-REVIEW
-QUIZ
-EXAM
-REFLECTION
-```
-
-一个典型干预：
-
-```text
-Diagnosis
- ↓
-Concept Explanation
- ↓
-Simple Practice
- ↓
-Variation
- ↓
-Assessment
+接受
+修改
+跳过
+调整
 ```
 
 ---
 
-# 32. AI 核心能力一：协助出题
+# 32. AI 协助出题
 
-AI Question Generation 是系统的一级能力。
+这是系统核心功能之一。
 
 目标：
 
-> 根据教材、知识点、学习目标和学生状态，帮助教师快速生成合适题目。
+> **AI 根据学生当前学习状态，为家长生成有明确学习目的的题目。**
 
 ---
 
@@ -925,74 +947,22 @@ AI Question Generation 是系统的一级能力。
 教材
 章节
 知识点
-学生知识状态
-薄弱知识点
-错误类型
 学习目标
-题目数量
-难度
+学生掌握度
+薄弱点
+错误类型
+历史题目
 题型
-预计答题时间
+难度
+数量
+预计时间
 是否需要图形
 是否需要证明
-是否需要开放题
-历史题目
 ```
 
 ---
 
-# 34. AI 出题输出
-
-每道题：
-
-```text
-question
-answer
-solution
-rubric
-knowledge_points
-difficulty
-question_type
-estimated_time
-error_patterns
-```
-
-例如：
-
-```text
-题目：
-……
-
-知识点：
-移项
-
-难度：
-0.55
-
-题型：
-应用题
-
-预计时间：
-5 min
-
-标准答案：
-……
-
-评分标准：
-……
-```
-
----
-
-# 35. AI 出题不是随机生成
-
-系统应该从：
-
-```text
-Student State
-```
-
-开始。
+# 34. AI 出题不是随机出题
 
 例如：
 
@@ -1001,13 +971,7 @@ Student State
 mastery = 0.34
 ```
 
-AI 不应该简单生成：
-
-```text
-10 道应用题
-```
-
-而应该生成具有学习目的的题组：
+AI 生成：
 
 ```text
 2 道概念题
@@ -1016,87 +980,126 @@ AI 不应该简单生成：
 1 道综合题
 ```
 
+而不是：
+
+```text
+随机 8 道题
+```
+
+---
+
+# 35. AI Question Generation
+
+输出：
+
+```text
+题目
+标准答案
+解析
+评分标准
+知识点
+难度
+题型
+预计时间
+错误类型
+```
+
 ---
 
 # 36. AI 出题流程
 
 ```text
 Learning Objective
-       ↓
+ ↓
 Student Knowledge State
-       ↓
+ ↓
 Question Planning
-       ↓
+ ↓
 LLM
-       ↓
+ ↓
 Question Candidates
-       ↓
+ ↓
 Validation
-       ↓
+ ↓
 Duplicate Detection
-       ↓
-Teacher Review
-       ↓
+ ↓
+Parent Review
+ ↓
 QuestionVersion
-       ↓
+ ↓
 Question Bank
 ```
 
 ---
 
-# 37. Question Validator
+# 37. 家长审核 AI 题目
 
-检查：
-
-```text
-年级是否匹配
-章节是否匹配
-知识点是否正确
-答案是否存在
-答案是否一致
-难度是否合理
-题型是否正确
-预计时间是否合理
-是否重复
-是否超出教材
-是否需要图形
-是否需要 Rubric
-```
-
-数学题额外检查：
-
-```text
-计算量
-答案可验证性
-推理要求
-证明完整性
-```
-
----
-
-# 38. 教师出题审核
-
-教师可以：
+家长可以：
 
 ```text
 接受
-修改题干
-修改答案
-修改知识点
-修改难度
-修改评分标准
+修改
 重新生成
+降低难度
+提高难度
 删除
 加入题库
 ```
 
-只有教师发布后成为正式题目。
+界面重点显示：
+
+```text
+为什么生成这道题？
+```
+
+例如：
+
+```text
+原因：
+
+孩子“应用题建模”掌握度：
+34%
+
+最近 5 道相关题：
+2 次建模错误
+
+因此 AI 推荐：
+3 道简单建模题
+```
+
+---
+
+# 38. Question Validator
+
+检查：
+
+```text
+年级
+章节
+知识点
+难度
+答案
+解析
+Rubric
+预计时间
+重复度
+计算量
+```
+
+数学额外：
+
+```text
+推理
+证明
+计算量
+答案一致性
+```
 
 ---
 
 # 39. Question Bank
 
-Question：
+字段：
 
 ```text
 question_id
@@ -1118,70 +1121,45 @@ status
 
 # 40. Question Version
 
-```text
-Question
- ├── Version 1
- ├── Version 2
- └── Version 3
-```
-
-已发布版本：
+发布题目：
 
 ```text
-IMMUTABLE
+QuestionVersion
 ```
+
+发布后 immutable。
 
 ---
 
-# 41. Similar Question Engine
+# 41. Similar Question
 
-每道题生成：
-
-```text
-QuestionSignature
-```
-
-包括：
+支持：
 
 ```text
-knowledge_points
-sub_knowledge
-question_type
-capability
-cognitive_level
-difficulty
-solution_structure
-error_types
-```
-
-搜索：
-
-```text
-同知识点 + 同技能
-同知识点 + 不同题型
-同技能 + 不同知识点
-更简单
-更困难
-迁移题
+同知识点
+同技能
+不同题型
+简单迁移
+困难迁移
+相同解题结构
+相同错误类型
 ```
 
 目标：
 
-> 找到“学习功能相同”的题，而不是只找文字相似题。
+> 找到学习功能相似的题。
 
 ---
 
-# 42. AI 核心能力二：协助批改
+# 42. AI 协助批改
 
-AI Grading 是系统第二个一级 AI 能力。
+第二个核心 AI 功能：
 
-目标：
-
-> **降低教师批改工作量，同时保留教师最终判断权。**
+> **AI 协助家长批改学生作业和考试。**
 
 ---
 
-# 43. AI 批改输入
+# 43. 批改输入
 
 ```text
 Question
@@ -1190,24 +1168,22 @@ Rubric
 Student Answer
 ```
 
-如果是纸质答案：
+纸质答案额外：
 
 ```text
 Original Image
-+
-OCR Result
-+
-Vision Result
+OCR
+Vision
 ```
 
 ---
 
-# 44. AI 批改输出
+# 44. 批改输出
 
 ```text
 suggested_score
-rubric_results
 correctness
+rubric_results
 error_type
 knowledge_points
 feedback
@@ -1234,47 +1210,17 @@ x = 6
 AI：
 
 ```text
-suggested_score = 0
-error_type = SIGN_ERROR
-knowledge_point = 移项
-confidence = 0.96
-```
-
-建议反馈：
-
-```text
-移项时符号发生错误。
+建议分数：0
+错误类型：SIGN_ERROR
+知识点：移项
+置信度：0.96
 ```
 
 ---
 
-# 46. AI 批改流程
+# 46. 家长批改审核
 
-```text
-Student Answer
-      ↓
-OCR / Vision
-      ↓
-Structured Answer
-      ↓
-Question Matching
-      ↓
-AI Grading
-      ↓
-Score Suggestion
-      ↓
-Error Analysis
-      ↓
-Knowledge Point Analysis
-      ↓
-Teacher Review
-```
-
----
-
-# 47. 教师批改界面
-
-同时显示：
+界面：
 
 ```text
 原始答案
@@ -1283,44 +1229,95 @@ OCR
 Rubric
 AI 建议分数
 AI 错误类型
-AI 知识点
 AI Feedback
 Confidence
 ```
 
-操作：
+按钮：
 
 ```text
-Accept AI
-Edit
-Manual Grade
+接受 AI
+修改
+人工批改
 ```
 
 ---
 
-# 48. AI 不能直接成为正式成绩
+# 47. 家长不需要审核所有题
 
-必须：
+系统应该自动分类：
+
+```text
+HIGH_CONFIDENCE
+```
+
+可以自动进入：
+
+```text
+AI Suggested
+```
+
+而：
+
+```text
+LOW_CONFIDENCE
+AMBIGUOUS
+OPEN_QUESTION
+PROOF
+ESSAY
+```
+
+进入：
+
+```text
+Needs Parent Review
+```
+
+目标：
+
+> **让家长只处理 AI 最不确定的部分。**
+
+---
+
+# 48. AI 批改置信度
+
+例如：
+
+```text
+题 1：
+0.99
+自动建议
+
+题 2：
+0.97
+自动建议
+
+题 3：
+0.61
+需要家长确认
+
+题 4：
+0.42
+需要家长人工判断
+```
+
+---
+
+# 49. AI 不能直接成为正式成绩
+
+正式成绩流程：
 
 ```text
 AI Suggestion
-       ↓
-Teacher Confirmation
-       ↓
+ ↓
+Parent Review
+ ↓
 Official Grade
-```
-
-AI 不能直接修改：
-
-```text
-正式成绩
-正式学习证据
-学生知识状态
 ```
 
 ---
 
-# 49. Grade Versioning
+# 50. Grade Versioning
 
 保存：
 
@@ -1334,7 +1331,7 @@ changed_at
 
 ---
 
-# 50. OCR / Vision
+# 51. OCR / Vision
 
 支持：
 
@@ -1351,7 +1348,7 @@ PDF
 ```text
 Upload
  ↓
-Validate
+Validation
  ↓
 Immutable Storage
  ↓
@@ -1368,45 +1365,29 @@ AI Grading
 
 ---
 
-# 51. 原始文件不可修改
+# 52. 手写答案
 
-必须：
-
-```text
-Original = Immutable
-```
-
-派生：
+支持识别：
 
 ```text
-OCR
-Vision
-Grading
-Annotation
+文字
+数字
+数学公式
+计算过程
+几何图形
+批注
+分数
 ```
 
-均不得覆盖原始文件。
+识别结果必须保留置信度。
 
 ---
 
-# 52. OCR Confidence
+# 53. OCR 失败
 
-保存：
+不能破坏原始文件。
 
-```text
-answer_confidence
-score_confidence
-annotation_confidence
-question_match_confidence
-```
-
-低置信度：
-
-```text
-REVIEW_REQUIRED
-```
-
-教师可以：
+家长可以：
 
 ```text
 重新 OCR
@@ -1416,120 +1397,94 @@ REVIEW_REQUIRED
 
 ---
 
-# 53. Teacher Annotation
+# 54. 历史试卷导入
 
-支持识别：
-
-```text
-圈错
-批注
-扣分
-得分
-文字反馈
-```
-
-最终统一：
+支持家长上传：
 
 ```text
-TeacherAnnotation
-TeacherScore
+过去考试
+过去作业
+过去练习
+过去试卷
 ```
+
+系统尝试恢复：
+
+```text
+Question
+StudentAnswer
+Score
+Parent/Teacher Annotation
+```
+
+然后形成历史学习证据。
 
 ---
 
-# 54. Historical Exam Import
-
-支持：
+# 55. Historical Assessment Pipeline
 
 ```text
-历史试卷
-历史作业
 扫描试卷
-```
-
-流程：
-
-```text
-Scan
+ ↓
+OCR
  ↓
 Question Detection
  ↓
 Student Answer
  ↓
-Teacher Score
+Score
  ↓
-Teacher Annotation
+Annotation
  ↓
 Question Matching
  ↓
 Knowledge Point Matching
  ↓
-Teacher Confirmation
+Parent Review
  ↓
 Learning Evidence
 ```
 
 ---
 
-# 55. Learning Evidence
+# 56. Learning Evidence
 
-核心实体：
-
-```text
-LearningEvidence
-```
-
-字段：
+核心数据：
 
 ```text
 evidence_id
 student_id
-knowledge_point_id
 question_id
+knowledge_point_id
 source_type
-source_id
 correct
 score
 difficulty
 error_type
-teacher_feedback
+feedback
 confidence
 trust_level
-created_at
-```
-
-来源：
-
-```text
-HOMEWORK
-QUIZ
-EXAM
-ONLINE_EXAM
-PAPER_EXAM
-HISTORICAL_EXAM
-PRACTICE
-TEACHER_OBSERVATION
 ```
 
 ---
 
-# 56. Evidence Trust Level
+# 57. Evidence Trust
 
 ```text
 RAW
 AI_EXTRACTED
 VALIDATED
-TEACHER_CONFIRMED
+PARENT_CONFIRMED
 OFFICIAL
 ```
 
-规则：
+家庭场景中：
 
-> 只有 Teacher Confirmed 数据才能进入正式学习状态。
+> **Parent Confirmed 是正式学习证据边界。**
 
 ---
 
-# 57. Error Pattern
+# 58. Error Pattern
 
 支持：
 
@@ -1549,264 +1504,314 @@ MODELING_ERROR
 
 ---
 
-# 58. 学生状态更新
+# 59. 学生状态更新
 
 ```text
-Old Knowledge State
+Old State
 +
-New Learning Evidence
+New Evidence
  ↓
-State Update Engine
+State Update
  ↓
-New Knowledge State
+New State
 ```
 
 考虑：
 
 ```text
-difficulty
-recency
-correctness
-error_type
-teacher_confirmation
-historical_performance
-```
-
-不是简单：
-
-```text
-正确率 = mastery
+难度
+时间
+错误类型
+历史表现
+家长确认
 ```
 
 ---
 
-# 59. Knowledge Decay
+# 60. 知识遗忘
 
-考虑遗忘：
+系统记录：
 
 ```text
-Last Evidence:
-120 days ago
+last_practiced
+last_assessed
+decay_risk
+```
 
-Mastery:
+例如：
+
+```text
+掌握：
 0.82
 
-Effective Mastery:
-下降
+但是：
+90 天没有练习
+
+Decay Risk：
+HIGH
 ```
 
-因此自动安排：
-
-```text
-Review
-```
+系统生成复习任务。
 
 ---
 
-# 60. Spaced Review
+# 61. 间隔复习
 
 初始策略：
 
 ```text
-Weak:
-1 day
+弱：
+1 天
 
-Medium:
-3 days
+中：
+3 天
 
-Good:
-7 days
+好：
+7 天
 
-Strong:
-14 days
+强：
+14 天
 
-Stable:
-30 days
+稳定：
+30 天
 ```
 
 ---
 
-# 61. AI 出题与 AI 批改的完整闭环
+# 62. Learning Intervention
 
-核心：
+支持：
 
 ```text
-Student Knowledge State
-        ↓
-Learning Objective
-        ↓
-AI Question Planning
-        ↓
-AI Question Generation
-        ↓
-Teacher Review
-        ↓
-Assignment / Exam
-        ↓
-Student Answer
-        ↓
-OCR / Vision
-        ↓
-AI Grading
-        ↓
-Teacher Confirmation
-        ↓
-Learning Evidence
-        ↓
-Knowledge State Update
-        ↓
-New Diagnosis
-        ↓
-New Learning Objective
-        ↓
-AI Question Generation
+EXPLANATION
+EXAMPLE
+PRACTICE
+REVIEW
+QUIZ
+EXAM
+REFLECTION
+```
+
+系统不是：
+
+```text
+错了
+ ↓
+再给 10 道一样的题
+```
+
+而是：
+
+```text
+诊断错误
+ ↓
+选择干预
+ ↓
+练习
+ ↓
+测量效果
 ```
 
 ---
 
-# 62. 典型学生场景
+# 63. Intervention Outcome
 
-初始状态：
+记录：
 
 ```text
-应用题建模 = 0.31
+intervention_id
+before_mastery
+after_mastery
+delta
+assessment_count
+time_to_improvement
 ```
 
-系统诊断：
+例如：
 
 ```text
-建模能力不足
+讲解：
+0.31 → 0.34
+
+简单题：
+0.34 → 0.45
+
+变式题：
+0.45 → 0.61
 ```
 
-AI 出题：
+系统可以逐渐知道：
+
+> 哪种学习方式对这个学生更有效。
+
+---
+
+# 64. Parent Feedback
+
+家长可以添加：
 
 ```text
-2 道简单建模题
-3 道普通应用题
+“孩子今天理解了这个概念”
+“这个错误是粗心”
+“孩子不会建模”
+“这道题超出当前学习范围”
+```
+
+这些反馈成为 Learning Evidence。
+
+---
+
+# 65. 家长学习报告
+
+每日：
+
+```text
+今日学习
+完成率
+正确率
+新增错误
+需要关注
+```
+
+每周：
+
+```text
+知识点变化
+掌握度变化
+错误类型
+学习时间
+学习计划完成率
+AI 建议
+```
+
+每月：
+
+```text
+知识体系
+长期趋势
+薄弱点
+改善点
+遗忘风险
+学习干预效果
+```
+
+---
+
+# 66. 家长报告示例
+
+```text
+本周：
+
+学习时间：
+2h 35min
+
+完成任务：
+18 / 20
+
+主要进步：
+移项
+0.61 → 0.84
+
+仍需关注：
+应用题建模
+0.38
+
+主要错误：
+MODEL_ERROR
+
+AI 建议：
+下周安排
+4 道基础建模题
++
 2 道变式题
-1 道综合题
-```
-
-学生作答。
-
-AI 批改：
-
-```text
-5 / 8 正确
-
-3 个错误：
-
-2 × MODELING_ERROR
-1 × CALCULATION_ERROR
-```
-
-教师确认。
-
-状态更新：
-
-```text
-0.31 → 0.45
-```
-
-三天后复习。
-
-AI 再出题：
-
-```text
-2 道迁移题
-```
-
-AI 批改：
-
-```text
-2 / 2 正确
-```
-
-状态：
-
-```text
-0.45 → 0.58
-```
-
-系统继续：
-
-```text
-综合题
-```
-
-这就是：
-
-```text
-出题
- ↓
-作答
- ↓
-批改
- ↓
-证据
- ↓
-状态
- ↓
-再出题
++
+1 次 Mini Test
 ```
 
 ---
 
-# 63. AI Question Bank Incremental Update
+# 67. 学生学习档案
 
-输入：
+包含：
+
+```text
+Assignment History
+Exam History
+Score History
+Knowledge State
+Mistakes
+Error Patterns
+Learning Plans
+Learning Sessions
+Learning Evidence
+Parent Feedback
+```
+
+支持：
+
+```text
+PDF
+CSV
+Image ZIP
+```
+
+---
+
+# 68. Question Bank Incremental Update
+
+系统定期分析：
 
 ```text
 学生错误
 知识缺口
-题目覆盖率
-题目重复率
-题目使用次数
+题目覆盖
+重复率
+使用率
 难度
-教师反馈
+家长反馈
 教材变化
+```
+
+AI 生成候选：
+
+```text
+ADD
+MODIFY
+REPLACE
+DEPRECATE
 ```
 
 流程：
 
 ```text
-Question Bank
-+
-Learning Evidence
-+
-Knowledge Gaps
-+
-New Materials
- ↓
 LLM
  ↓
-Question Candidates
+Candidate
  ↓
 Duplicate Detection
  ↓
 Validation
  ↓
-Teacher Review
+Parent Review
  ↓
 Question Bank
 ```
 
 ---
 
-# 64. AI Knowledge Base Incremental Update
+# 69. Knowledge Base Incremental Update
 
-输入：
+AI 可以根据：
 
 ```text
 教材
-已有知识点
 历史题目
-新题目
 学生错误
-教师反馈
+新题目
+家长反馈
 ```
 
-AI 可以建议：
+建议：
 
 ```text
 ADD
@@ -1816,25 +1821,13 @@ SPLIT
 DEPRECATE
 ```
 
-流程：
-
-```text
-LLM
- ↓
-KnowledgePointCandidate
- ↓
-Validator
- ↓
-Teacher Review
- ↓
-KnowledgePointVersion
-```
+必须经过验证和家长确认。
 
 ---
 
-# 65. AI Agent 划分
+# 70. AI Agent
 
-系统主要 AI Agent：
+主要 Agent：
 
 ```text
 Material Agent
@@ -1860,9 +1853,9 @@ Question Bank Update Agent
 
 ---
 
-# 66. Agent 权限原则
+# 71. Agent 权限
 
-Agent 默认：
+默认：
 
 ```text
 READ
@@ -1871,44 +1864,22 @@ SUGGEST
 GENERATE
 ```
 
-不允许直接修改：
+不能直接修改：
 
 ```text
-Official Grade
-Official Evidence
-Published Exam
-Published QuestionVersion
-Student Knowledge State
+正式成绩
+正式学习证据
+发布题目
+学生正式知识状态
 ```
 
-除非经过明确的系统规则和教师确认。
+除非经过明确确认流程。
 
 ---
 
-# 67. Agent Tools
+# 72. LLM Traceability
 
-可以访问：
-
-```text
-SQLite
-Textbook Retrieval
-Material Retrieval
-OCR
-Vision
-Question Bank
-Question Signature
-Student Knowledge State
-Learning Evidence
-Rubric
-PDF
-SVG
-```
-
----
-
-# 68. LLM Traceability
-
-每次调用保存：
+保存：
 
 ```text
 agent
@@ -1925,98 +1896,27 @@ job_id
 
 ---
 
-# 69. Assignment
-
-状态：
-
-```text
-DRAFT
-REVIEWING
-PUBLISHED
-OPEN
-CLOSED
-GRADING
-GRADED
-ARCHIVED
-CANCELLED
-```
-
----
-
-# 70. Exam
+# 73. Online Exam
 
 支持：
 
 ```text
-Formal Exam
-Mock Exam
-Chapter Test
-Stage Test
-Online Exam
-Paper Exam
+选择题
+多选题
+判断题
+填空题
+计算题
+简答题
+证明题
+作文
+开放题
 ```
 
 ---
 
-# 71. ExamVersion
+# 74. Online Exam Timer
 
-发布后：
-
-```text
-IMMUTABLE
-```
-
-包括：
-
-```text
-questions
-QuestionVersion
-order
-points
-total_score
-instructions
-time_limit
-```
-
----
-
-# 72. Online Exam
-
-支持：
-
-```text
-MCQ
-Multi-select
-True/False
-Fill-in
-Short Answer
-Calculation
-Proof
-Composition
-Open Question
-```
-
----
-
-# 73. Online Answer
-
-支持：
-
-```text
-Radio
-Checkbox
-Text
-Multiline
-LaTeX
-Rich Text
-Image
-```
-
----
-
-# 74. Server-authoritative Timer
-
-保存：
+服务器保存：
 
 ```text
 started_at
@@ -2026,12 +1926,6 @@ submitted_at
 
 浏览器 Timer 仅显示。
 
-服务器决定：
-
-```text
-是否超时
-```
-
 ---
 
 # 75. Autosave
@@ -2039,28 +1933,16 @@ submitted_at
 默认：
 
 ```text
-15 seconds
+15 秒
 ```
 
-范围：
+服务器是答案最终来源。
 
-```text
-10–30 seconds
-```
-
-使用：
-
-```text
-Debounce
-+
-Periodic Save
-+
-Browser Draft
-```
+浏览器保留临时 Draft 用于断网恢复。
 
 ---
 
-# 76. ExamAttempt
+# 76. Exam Attempt
 
 ```text
 attempt_id
@@ -2092,36 +1974,42 @@ GRADED
 # 77. Paper Exam
 
 ```text
-Exam
+生成 PDF
  ↓
-PDF / DOCX
+家长打印
  ↓
-Print
+学生完成
  ↓
-Student Handwriting
+拍照 / 扫描
  ↓
-Scan / Photo
+上传
  ↓
 OCR / Vision
  ↓
-AI Grading
+AI 批改
  ↓
-Teacher Confirm
+家长确认
+```
+
+线上考试和纸质考试最终进入统一：
+
+```text
+StudentAnswer
 ```
 
 ---
 
 # 78. PDF 导出
 
-教师创建试卷后可以生成：
+支持：
 
 ```text
-Student Version
-Answer Version
-Rubric Version
+学生版
+答案版
+评分标准版
 ```
 
-学生版不能包含：
+学生版不包含：
 
 ```text
 答案
@@ -2154,48 +2042,22 @@ SVG
 中文
 公式
 图片
-SVG 转换
+SVG
 表格
 题号
 分值
 ```
 
-教师可以继续手工修改 Word。
+家长可以手工修改。
 
 ---
 
-# 80. Student Learning Archive
+# 80. 数据库
 
-保存：
-
-```text
-Assignment History
-Exam History
-Score Trends
-Knowledge Trends
-Mistakes
-Error Patterns
-Teacher Feedback
-Learning Plans
-Learning Sessions
-Learning Evidence
-```
-
-支持：
-
-```text
-PDF
-CSV
-Image ZIP
-```
-
----
-
-# 81. 数据库完整表
+核心表：
 
 ```text
 users
-classes
 students
 
 textbooks
@@ -2225,7 +2087,7 @@ learning_evidence
 
 error_patterns
 student_error_evidence
-teacher_feedback
+parent_feedback
 
 questions
 question_versions
@@ -2248,8 +2110,8 @@ submission_files
 student_answers
 answer_versions
 
-teacher_annotations
-teacher_scores
+parent_annotations
+parent_scores
 
 gradings
 grading_versions
@@ -2277,7 +2139,7 @@ settings
 
 ---
 
-# 82. 文件存储
+# 81. 文件存储
 
 ```text
 data/
@@ -2286,7 +2148,7 @@ data/
 ├── students/
 │   └── {student_id}/
 │       └── submissions/
-│           └── {exam_or_assignment_id}/
+│           └── {assignment_or_exam_id}/
 │               └── {timestamp}/
 │                   ├── original/
 │                   ├── derived/
@@ -2295,13 +2157,9 @@ data/
 └── cache/
 ```
 
-原始文件 immutable。
-
 ---
 
-# 83. Async Job
-
-类型：
+# 82. Async Jobs
 
 ```text
 MATERIAL_DISCOVERY
@@ -2334,7 +2192,7 @@ CANCELLED
 
 ---
 
-# 84. CPU 资源策略
+# 83. CPU 资源策略
 
 默认：
 
@@ -2343,60 +2201,31 @@ CPU workers = 1
 max_concurrent_heavy_jobs = 1
 ```
 
-原则：
-
-```text
-Web API
-不被 AI/OCR 阻塞
-```
-
-重任务：
+重任务必须：
 
 ```text
 异步
 串行
-可恢复
 可重试
+可恢复
 ```
+
+普通 Web API 不得被重任务阻塞。
 
 ---
 
-# 85. Job Failure
-
-失败保存：
-
-```text
-input
-job
-error
-stack_trace
-llm_run
-```
-
-Retry：
-
-```text
-创建新 Job
-```
-
-不覆盖旧 Job。
-
----
-
-# 86. API
+# 84. API
 
 ```text
 /auth
 
 /students
-/classes
 
 /textbooks
 /materials
 /material-agent
 
 /knowledge-points
-/knowledge-graph
 
 /student-knowledge-state
 /learning-evidence
@@ -2407,8 +2236,8 @@ Retry：
 /learning-sessions
 
 /questions
-/question-bank
 /question-generation
+/question-bank
 /similar-questions
 
 /assignments
@@ -2430,7 +2259,7 @@ Retry：
 
 ---
 
-# 87. Security
+# 85. 安全
 
 必须：
 
@@ -2445,14 +2274,15 @@ File Size Limit
 Path Traversal Protection
 Authenticated File Access
 Audit Log
-Student Data Isolation
 ```
 
 ---
 
-# 88. Privacy
+# 86. 家庭数据隐私
 
-外部 LLM API 配置：
+学生数据属于敏感学习数据。
+
+外部 AI 调用需要支持：
 
 ```text
 provider
@@ -2470,24 +2300,7 @@ Redaction
 
 ---
 
-# 89. Copyright
-
-网络材料：
-
-```text
-URL
-Domain
-Retrieved Time
-Content Hash
-License
-Source Metadata
-```
-
-第三方材料不得自动重新公开发布。
-
----
-
-# 90. 配置
+# 87. 配置
 
 `.env`：
 
@@ -2532,11 +2345,11 @@ LLM_MODEL=
     },
     "planning": {
       "enabled": true,
-      "teacher_approval": true
+      "parent_approval": true
     },
     "state_update": {
       "enabled": true,
-      "teacher_confirmed_only": true
+      "parent_confirmed_only": true
     },
     "spaced_review": {
       "enabled": true
@@ -2558,7 +2371,7 @@ LLM_MODEL=
 
 ---
 
-# 91. Installation
+# 88. 安装
 
 提供：
 
@@ -2569,16 +2382,14 @@ install.sh
 功能：
 
 ```text
-创建 venv
+创建 Python venv
 安装依赖
-初始化数据库
-执行 migrations
-创建目录
-创建默认教师
+初始化 SQLite
+执行 migration
+创建 data directories
+创建家长账号
 Build frontend
 ```
-
-必须幂等。
 
 不得覆盖：
 
@@ -2589,355 +2400,248 @@ configure.json
 
 ---
 
-# 92. 测试
+# 89. 测试
 
-## Unit Test
+## AI 出题测试
 
-测试：
-
-```text
-Question
-QuestionVersion
-KnowledgePoint
-KnowledgePointVersion
-StudentKnowledgeState
-LearningEvidence
-LearningPlan
-LearningSession
-Exam
-ExamVersion
-Score
-```
-
-## AI Question Test
-
-测试：
+必须测试：
 
 ```text
 教材匹配
 知识点匹配
-答案
+年级匹配
 难度
-重复题
+答案
+解析
 Rubric
+重复题
+题型
 ```
 
-## AI Grading Test
+## AI 批改测试
 
-测试：
+必须测试：
 
 ```text
-客观题
-数学计算题
+选择题
+填空题
+计算题
 证明题
 开放题
 作文
 手写答案
 公式
-图形题
+几何题
 ```
 
 ---
 
-# 93. End-to-End Test
+# 90. 学习闭环测试
 
-必须能够完整运行：
+必须测试：
 
 ```text
-教师登录
+学生状态
  ↓
-创建学生
+学习目标
  ↓
-选择教材
+AI 出题
  ↓
-导入教材
+学生答题
  ↓
-OCR
+AI 批改
  ↓
-建立知识点
- ↓
-建立学生知识状态
- ↓
-诊断
- ↓
-生成学习目标
- ↓
-AI 协助出题
- ↓
-教师确认
- ↓
-发布作业
- ↓
-学生作答
- ↓
-AI 协助批改
- ↓
-教师确认
+家长确认
  ↓
 Learning Evidence
  ↓
 Knowledge State Update
  ↓
-重新诊断
+新学习计划
  ↓
-生成下一轮学习计划
- ↓
-AI 再次出题
+AI 再出题
 ```
 
 ---
 
-# 94. MVP
+# 91. MVP
 
 第一阶段：
 
 ```text
-Login
+家长登录
  ↓
-Student
+创建学生
  ↓
-Textbook
+选择教材
  ↓
-Material
+上传教材
  ↓
 OCR
  ↓
-Chapter
+章节
  ↓
-Knowledge Point
+知识点
  ↓
-Student Knowledge State
+学生知识状态
  ↓
-Diagnosis
+学习目标
  ↓
-Learning Objective
+AI 学习计划
  ↓
-Learning Plan
+AI 协助出题
  ↓
-Question Bank
+家长确认
  ↓
-AI Question Generation
+作业
  ↓
-Teacher Review
+学生作答
  ↓
-Assignment
+AI 协助批改
  ↓
-Exam
- ↓
-Online Exam
- ↓
-Paper Exam
- ↓
-Scan
- ↓
-AI Grading
- ↓
-Teacher Confirm
+家长确认
  ↓
 Learning Evidence
  ↓
-State Update
+Knowledge State Update
  ↓
-Next Learning Plan
+下一轮学习计划
 ```
-
-MVP 最重要的验收条件：
-
-> **学生完成一次学习后，系统能够根据学习结果产生下一次有依据的学习任务。**
 
 ---
 
-# 95. Phase 2
+# 92. MVP 最重要验收标准
+
+不是：
+
+> AI 能不能生成很多题。
+
+也不是：
+
+> AI 能不能自动批改所有题。
+
+而是：
+
+> **孩子完成一次学习后，系统能否根据真实学习结果，为孩子产生下一次有依据的学习任务。**
+
+---
+
+# 93. Phase 2
+
+增加：
 
 ```text
 Material Discovery Agent
-Knowledge Incremental Update
-Question Bank Incremental Update
-Similar Question Engine
 Historical Exam Import
-Teacher Annotation Recognition
+Similar Question Engine
 Error Pattern Engine
 Spaced Review
+Knowledge Incremental Update
+Question Bank Incremental Update
 Intervention Outcome
 ```
 
 ---
 
-# 96. Phase 3
+# 94. Phase 3
+
+增加：
 
 ```text
-Automatic Knowledge Gap Discovery
 Student-specific Learning Policy
 Cross-textbook Knowledge Mapping
+Automatic Knowledge Gap Discovery
 Adaptive Intervention Sequencing
-Automatic Question Bank Maintenance
 Long-term Learning Path
+Automatic Question Bank Maintenance
 ```
 
 ---
 
-# 97. 核心产品原则
+# 95. 核心产品闭环
 
-## 原则 1：AI 协助出题
-
-```text
-AI Generate
-    ↓
-Validation
-    ↓
-Teacher Review
-```
-
-## 原则 2：AI 协助批改
+最终：
 
 ```text
-AI Grade
-    ↓
-Teacher Review
-    ↓
-Official Grade
-```
-
-## 原则 3：教师是正式判断边界
-
-```text
-AI
- ↓
-Suggestion
- ↓
-Teacher
- ↓
-Official Evidence
-```
-
-## 原则 4：学生知识状态是系统核心
-
-```text
-Question
-不是核心
-
-Score
-不是核心
-
-Student Knowledge State
-才是核心
-```
-
-## 原则 5：每一次学习产生证据
-
-```text
-Learning
- ↓
-Evidence
-```
-
-## 原则 6：每一次证据影响下一次学习
-
-```text
-Evidence
- ↓
-Knowledge State
- ↓
-Learning Plan
- ↓
-Question
+                    家长
+                      │
+              学习目标 / 确认
+                      ↓
+                 AI 学习助手
+                      │
+          ┌───────────┴───────────┐
+          ↓                       ↓
+      学习规划                 AI 出题
+          │                       │
+          └──────────┬────────────┘
+                     ↓
+                   学生
+                     ↓
+                  作答
+                     ↓
+               AI 协助批改
+                     ↓
+                   家长
+                     ↓
+                  确认
+                     ↓
+             Learning Evidence
+                     ↓
+          Student Knowledge State
+                     ↓
+                学习诊断
+                     ↓
+                下一轮计划
+                     ↓
+                 AI 再出题
 ```
 
 ---
 
-# 98. 最终系统闭环
+# 96. 三方职责
 
-最终系统：
+| 角色     | 主要职责              |
+| ------ | ----------------- |
+| **学生** | 学习、阅读、练习、考试、订正    |
+| **AI** | 分析、规划、出题、批改、反馈、推荐 |
+| **家长** | 目标设置、审核、确认、监督、陪伴  |
 
-```text
-                         ┌───────────────┐
-                         │    教材课程     │
-                         └───────┬───────┘
-                                 ↓
-                         ┌───────────────┐
-                         │    知识体系     │
-                         └───────┬───────┘
-                                 ↓
-                         ┌───────────────┐
-                         │ 学生知识状态    │
-                         └───────┬───────┘
-                                 ↓
-                         ┌───────────────┐
-                         │     诊断       │
-                         └───────┬───────┘
-                                 ↓
-                         ┌───────────────┐
-                         │   学习目标      │
-                         └───────┬───────┘
-                                 ↓
-                         ┌───────────────┐
-                         │   学习计划      │
-                         └───────┬───────┘
-                                 ↓
-                    ┌────────────────────────┐
-                    │    AI 协助出题          │
-                    └───────────┬────────────┘
-                                ↓
-                         ┌───────────────┐
-                         │   教师审核      │
-                         └───────┬───────┘
-                                 ↓
-                         ┌───────────────┐
-                         │ 作业 / 考试     │
-                         └───────┬───────┘
-                                 ↓
-                         ┌───────────────┐
-                         │   学生作答      │
-                         └───────┬───────┘
-                                 ↓
-                         ┌───────────────┐
-                         │ OCR / Vision   │
-                         └───────┬───────┘
-                                 ↓
-                    ┌────────────────────────┐
-                    │    AI 协助批改          │
-                    └───────────┬────────────┘
-                                ↓
-                         ┌───────────────┐
-                         │   教师确认      │
-                         └───────┬───────┘
-                                 ↓
-                         ┌───────────────┐
-                         │ Learning       │
-                         │ Evidence       │
-                         └───────┬───────┘
-                                 ↓
-                         ┌───────────────┐
-                         │ 状态更新        │
-                         └───────┬───────┘
-                                 │
-                                 └──────────────→ 重新诊断
-```
+核心原则：
+
+> **AI 做重复工作，学生做学习工作，家长做关键决策和陪伴。**
 
 ---
 
-# 99. 一句话产品定义
+# 97. 最终产品定义
 
-> **这是一个以学生知识状态为核心，由 AI 协助教师出题和批改，通过真实学习证据持续更新学生状态，并自动产生下一轮学习任务的学习陪伴系统。**
+> **学习陪伴系统是一个以学生知识状态为核心、以家长为主要学习陪伴者、以 AI 协助出题和 AI 协助批改为核心能力，通过 Learning Evidence 持续更新学生知识状态，并自动生成下一轮学习任务的家庭个性化学习系统。**
 
-核心闭环最终定义为：
+最终闭环：
 
 ```text
-AI 出题
- ↓
-学生作答
- ↓
-AI 批改
- ↓
-教师确认
- ↓
-学习证据
- ↓
+家长设定目标
+      ↓
 学生知识状态
- ↓
-学习计划
- ↓
-AI 再出题
+      ↓
+AI 学习规划
+      ↓
+AI 协助出题
+      ↓
+学生学习 / 作答
+      ↓
+AI 协助批改
+      ↓
+家长确认
+      ↓
+学习证据
+      ↓
+学生知识状态更新
+      ↓
+下一轮学习规划
+      ↓
+AI 再次出题
 ```
 
-这就是系统最核心的产品闭环。
+核心价值：
+
+> **让家长从“亲自找题、出题、批改、分析”的低效率重复劳动中解放出来，把精力集中在真正重要的事情：理解孩子、确认关键判断、鼓励孩子和陪伴孩子持续学习。**
