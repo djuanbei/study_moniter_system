@@ -5,6 +5,7 @@ const NAV = [
   { to: '/', label: '工作台', icon: '🏠' },
   { to: '/assignments', label: '我的作业', icon: '📝', student: true },
   { to: '/learning', label: '学习闭环', icon: '🔄', teacher: true },
+  { to: '/materials', label: '教材资料', icon: '📚', teacher: true },
   { to: '/wizard', label: '出题向导', icon: '✨', teacher: true },
   { to: '/grading', label: '批改', icon: '✅', teacher: true },
   { to: '/students', label: '学生管理', icon: '🧒', teacher: true },

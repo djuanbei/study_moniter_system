@@ -106,6 +106,21 @@ def csrf_headers():
 
 
 @pytest.fixture(autouse=True)
+def _no_llm(monkeypatch):
+    """Hermetic tests: block every LLM entry point (deterministic fallbacks run)."""
+    import app.services.llm.agent as agent
+    import app.services.llm as pkg
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("tests: llm disabled")
+
+    monkeypatch.setattr(pkg, "stage_material_analysis", _boom, raising=False)
+    monkeypatch.setattr(pkg, "stage_learning_plan", _boom, raising=False)
+    monkeypatch.setattr(pkg, "generate_two_sets", _boom, raising=False)
+    monkeypatch.setattr(agent, "get_chat_model", _boom, raising=False)
+
+
+@pytest.fixture(autouse=True)
 def _seed_csrf_cookie(client):
     client.cookies.set("sms_csrf", "test-token")
 

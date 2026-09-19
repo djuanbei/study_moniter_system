@@ -374,6 +374,26 @@ class PlanGenerateIn(BaseModel):
     student_id: int
 
 
+# --- Materials (PRD §21) ---
+
+class MaterialOut(BaseModel):
+    id: int
+    material_type: str
+    title: str
+    textbook_version: Optional[str]
+    grade: Optional[str]
+    semester: Optional[int]
+    filename: str
+    sha256: str
+    mime_type: str
+    size_bytes: int
+    status: str
+    ocr_text: Optional[str]
+    analysis_json: Optional[dict[str, Any]]
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
 # --- Settings ---
 
 class SettingsOut(BaseModel):

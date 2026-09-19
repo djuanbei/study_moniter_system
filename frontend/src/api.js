@@ -169,6 +169,13 @@ export const endpoints = {
   paperPdfUrl: (setId, variant = 'student') =>
     `/api/exports/question-sets/${setId}/pdf?variant=${variant}`,
 
+  materials: () => api.get('/materials'),
+  uploadMaterial: (formData) => api.upload('/materials', formData),
+  analyzeMaterial: (id) => api.post(`/materials/${id}/analyze`),
+  publishMaterial: (id) => api.post(`/materials/${id}/publish`),
+  materialFileUrl: (id) => `/api/materials/${id}/file`,
+  deleteMaterial: (id) => api.del(`/materials/${id}`),
+
   exportCsv: (id) => api.get(`/archive/students/${id}/csv`),
   exportPdf: (id) => api.get(`/archive/students/${id}/pdf`),
   exportImagesZip: (id) => api.get(`/archive/students/${id}/images.zip`),

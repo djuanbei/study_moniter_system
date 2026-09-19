@@ -11,6 +11,7 @@ import DoAssignment from './pages/DoAssignment.jsx'
 import ViewResult from './pages/ViewResult.jsx'
 import Grading from './pages/Grading.jsx'
 import Learning from './pages/Learning.jsx'
+import Materials from './pages/Materials.jsx'
 import Archive from './pages/Archive.jsx'
 import Accounts from './pages/Accounts.jsx'
 import SettingsPage from './pages/Settings.jsx'
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/classes" element={<Protected teacherOnly><Classes /></Protected>} />
         <Route path="/wizard" element={<Protected teacherOnly><QuestionWizard /></Protected>} />
         <Route path="/learning" element={<Protected teacherOnly><Learning /></Protected>} />
+        <Route path="/materials" element={<Protected teacherOnly><Materials /></Protected>} />
         <Route path="/assignments" element={<Assignments />} />
         <Route path="/assignments/:id/do" element={<DoAssignment />} />
         <Route path="/result/:id" element={<ViewResult />} />

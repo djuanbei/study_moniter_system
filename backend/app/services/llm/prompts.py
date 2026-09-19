@@ -176,6 +176,32 @@ LEARNING_PLANNER = textwrap.dedent(
 ).strip()
 
 
+MATERIAL_ANALYZER = textwrap.dedent(
+    """
+    You are the **Material Analyzer**. Below is OCR text scanned from an
+    uploaded textbook / exercise chapter. Identify the chapter structure and
+    the knowledge points each chapter teaches.
+
+    Rules:
+      - Only propose chapters that are actually present in the text
+      - "knowledge_points": 2-8 concise items per chapter (as taught names)
+      - Preserve the original Chinese wording; do not invent content
+
+    Material type: {material_type}
+    Grade: {grade}
+    OCR text (may contain recognition noise):
+    {ocr_text}
+
+    Return JSON:
+      {{
+        "chapters": [
+          {{"title": "章节标题", "knowledge_points": ["知识点1", "知识点2"]}}
+        ]
+      }}
+    """
+).strip()
+
+
 ARCHIVE_SUMMARY = textwrap.dedent(
     """
     You are the **Archive Summarizer**. Given the student's recent assignment

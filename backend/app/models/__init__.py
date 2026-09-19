@@ -30,6 +30,7 @@ from app.models.learning import (
     StudentKnowledgeState,
     StudentKnowledgeStateHistory,
 )
+from app.models.materials import Material
 from app.models.students import Chapter, Class, Student, StudentProgress
 from app.models.system import LLMRun, Setting
 
@@ -55,6 +56,7 @@ ALL_MODELS = [
     LearningPlan,
     LearningPlanItem,
     InterventionOutcome,
+    Material,
     LLMRun,
     AuditLog,
     Setting,
@@ -63,7 +65,7 @@ ALL_MODELS = [
 
 def register_all() -> None:
     """Import all model modules so their tables register with the metadata."""
-    from app.models import assignments, auth, learning, students, system  # noqa: F401
+    from app.models import assignments, auth, learning, materials, students, system  # noqa: F401
 
 
 __all__ = [
@@ -91,6 +93,7 @@ __all__ = [
     "LearningPlan",
     "LearningPlanItem",
     "InterventionOutcome",
+    "Material",
     "LLMRun",
     "Setting",
 ]

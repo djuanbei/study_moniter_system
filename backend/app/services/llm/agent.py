@@ -35,6 +35,7 @@ from app.services.llm.prompts import (
     DIAGRAM_GENERATOR,
     GRADING,
     LEARNING_PLANNER,
+    MATERIAL_ANALYZER,
     QUESTION_GENERATOR,
     QUESTION_PLANNER,
     VALIDATOR,
@@ -321,7 +322,6 @@ def stage_archive_summary(
 # ---------------------------------------------------------------------------
 # Stage 8: Learning plan (PRD §30)
 # ---------------------------------------------------------------------------
-
 def stage_learning_plan(
     db: Session,
     *,
@@ -428,3 +428,65 @@ def generate_two_sets(
         )
 
     return {"curriculum": curriculum, "plan": plan, "sets": sets}
+
+# ---------------------------------------------------------------------------
+# Stage 9: Material analysis (PRD §20) — OCR text -> chapter/KP candidates
+# ---------------------------------------------------------------------------
+
+def stage_material_analysis(
+    db: Session,
+    *,
+    material_type: str,
+    grade: Optional[str],
+    ocr_text: str,
+    user: Optional[User],
+) -> tuple[Optional[dict], Optional[int]]:
+    """Extract chapter candidates from OCR text. Returns (analysis, llm_run_id).
+
+    analysis is None when the LLM fails or returns nothing usable — the
+    caller falls back to the deterministic extractor.
+    """
+    prompt = MATERIAL_ANALYZER.format(
+        material_type=material_type,
+        grade=grade or "(未指定)",
+        ocr_text=ocr_text[:12000],
+    )
+    llm = get_chat_model(purpose="material_analysis")
+    started = time.time()
+    try:
+        msg = llm.invoke(
+            [
+                SystemMessage(content="You are a deterministic assistant. Return ONLY JSON."),
+                HumanMessage(content=prompt),
+            ]
+        )
+        duration = int((time.time() - started) * 1000)
+        parsed = _safe_json_loads(msg.content)
+        out = parsed if isinstance(parsed, dict) else {"value": parsed}
+        run = _record_run(
+            db,
+            agent="material_agent",
+            purpose="material_analysis",
+            prompt=prompt,
+            output=out,
+            user_id=user.id if user else None,
+            duration_ms=duration,
+        )
+        chapters = out.get("chapters")
+        if not isinstance(chapters, list) or not chapters:
+            return None, run.id
+        return out, run.id
+    except Exception as exc:  # noqa: BLE001
+        duration = int((time.time() - started) * 1000)
+        _record_run(
+            db,
+            agent="material_agent",
+            purpose="material_analysis",
+            prompt=prompt,
+            output=None,
+            user_id=user.id if user else None,
+            duration_ms=duration,
+            status="error",
+            error=str(exc),
+        )
+        return None, None
