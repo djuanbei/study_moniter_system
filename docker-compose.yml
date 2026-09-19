@@ -1,0 +1,55 @@
+# 学习陪伴系统 - 生产部署
+# Runs the FastAPI backend on :8000 (uvicorn workers=2). The backend serves
+# the prebuilt frontend from frontend/dist.
+
+services:
+  app:
+    image: python:3.11-slim
+    container_name: study-moniter-app
+    working_dir: /app
+    env_file: .env
+    volumes:
+      - .:/app
+      - app-data:/app/data
+      - app-uploads:/app/uploads
+      - app-logs:/app/logs
+    ports:
+      - "8000:8000"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      HOST: 0.0.0.0
+      PORT: "8000"
+    command: >
+      bash -c "
+        set -euo pipefail
+        apt-get update && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-chi-sim openssl &&
+        pip install --no-cache-dir uv &&
+        uv venv .venv --python 3.11 &&
+        uv pip install --python .venv/bin/python -e . &&
+        .venv/bin/alembic -c backend/alembic.ini upgrade head &&
+        # Generate PASS_WORD if missing so first-boot doesn't fail.
+        if ! grep -qE '^PASS_WORD=[^[:space:]]+' .env; then
+          PW=$(openssl rand -base64 18 | tr -dc 'A-Za-z0-9' | head -c 16)
+          if grep -qE '^PASS_WORD=' .env; then
+            sed -i \"s|^PASS_WORD=.*|PASS_WORD=\$PW|\" .env
+          else
+            echo \"PASS_WORD=\$PW\" >> .env
+          fi
+          echo '[bootstrap] Generated initial PASS_WORD (printed once below):'
+          echo \"            PASS_WORD=\$PW\"
+        fi &&
+        .venv/bin/python -c 'from app.routes._helpers import ensure_default_teacher_exists; from app.config import get_settings; from app.database import SessionLocal; db=SessionLocal(); ensure_default_teacher_exists(db, get_settings()); db.close()' &&
+        .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+      "
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; urllib.request.urlopen('http://localhost:8000/api/health').read()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  app-data:
+  app-uploads:
+  app-logs:

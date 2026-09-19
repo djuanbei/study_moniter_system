@@ -1,0 +1,40 @@
+# Secrets and config
+.env
+configure.json
+*.local
+
+# Runtime data
+backend/data/
+backend/uploads/
+backend/logs/
+data/
+uploads/
+logs/
+
+# Build artifacts
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Backups
+*.bak
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm

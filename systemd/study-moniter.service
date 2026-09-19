@@ -1,0 +1,27 @@
+[Unit]
+Description=学习陪伴系统 / Learning Companion System
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/study-moniter-system
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/study-moniter-system/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+Restart=on-failure
+RestartSec=5
+User=study-moniter
+Group=study-moniter
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/study-moniter-system/data /opt/study-moniter-system/uploads /opt/study-moniter-system/logs
+
+StandardOutput=append:/opt/study-moniter-system/logs/app.log
+StandardError=append:/opt/study-moniter-system/logs/app.log
+
+[Install]
+WantedBy=multi-user.target
