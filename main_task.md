@@ -1,6 +1,6 @@
 # 学习陪伴系统（Learning Companion System）
 
-## Product Requirements Document — PRD v4.0
+## 完整产品需求文档 PRD v6.0
 
 ---
 
@@ -12,399 +12,255 @@
 
 ## 1.2 产品定位
 
-本系统是一个面向**极小规模教学场景**的：
+一个面向小规模教学场景的：
 
-> **教材驱动 + 学生证据驱动 + LLM 辅助 + 持续学习更新的学习陪伴系统。**
+> **教材驱动、AI 协助出题、AI 协助批改、学生知识状态驱动、教师确认、持续学习闭环系统。**
 
-目标用户规模：
+系统核心不是单纯：
 
-```text
-教师：1–2 人
-学生：< 5 人
-班级：1–2 个
-同时在线学生：≤ 5 人
-```
-
-目标部署环境：
-
-```text
-CPU：2 cores
-RAM：4 GB
-GPU：无
-```
-
-系统必须能够在上述配置下运行。
-
----
-
-# 2. 核心学习闭环
-
-系统核心不是简单 AI 出题，而是建立：
-
-```text
-教材 / 学习资料
-        ↓
-教材章节
-        ↓
-知识点
-        ↓
-题库
-        ↓
-个性化出题
-        ↓
-作业 / 考试
-        ↓
-学生作答
-        ↓
-OCR / 规则 / LLM
-        ↓
-教师确认
-        ↓
-Learning Evidence
-        ↓
-学生知识状态
-        ↓
-下一轮个性化学习
-```
-
-历史纸质材料也进入同一条数据链：
-
-```text
-历史扫描试卷
-        ↓
-OCR / Vision / LLM
-        ↓
-Question
-StudentAnswer
-TeacherScore
-TeacherAnnotation
-        ↓
-教师确认
-        ↓
-Learning Evidence
-```
-
----
-
-# 3. 核心产品目标
-
-系统必须解决：
-
-1. 教师使用什么教材？
-2. 当前章节有哪些知识点？
-3. 学生掌握哪些知识点？
-4. 学生在哪些知识点上反复出错？
-5. 历史考试成绩如何进入学生学习档案？
-6. 如何根据学生真实表现生成下一轮题目？
-7. 如何维护一个持续增长的题库？
-8. 如何持续更新知识点体系？
-9. 如何统一线上考试和纸质考试？
-10. 如何把历史扫描试卷恢复成结构化学习数据？
-
----
-
-# 4. 与普通 AI 出题器的区别
-
-普通系统：
-
-```text
-教材
- ↓
-LLM
- ↓
-题目
-```
-
-本系统：
-
-```text
-教材
- +
-知识点
- +
-题库
- +
-学生答案
- +
-教师评分
- +
-教师批注
- +
-历史考试
- +
-学习证据
- +
-LLM
-        ↓
-持续更新
-```
-
-核心数据资产是：
-
-> **学生长期学习证据。**
-
----
-
-# 5. 用户角色
-
-## 5.1 Teacher
-
-可以：
-
-* 管理学生
-* 管理教材
-* 上传资料
-* 管理知识点
-* 管理题库
-* 生成题目
-* 创建作业
-* 创建考试
-* 导出 PDF
-* 导出 Word
-* 发布在线考试
-* 上传纸质考试
+* AI 出题
 * AI 批改
-* 确认最终成绩
-* 查看学生学习档案
-* 查看知识点掌握情况
+* 题库
+* 在线考试
+* OCR
 
-## 5.2 Student
+而是把这些能力连接起来：
 
-可以：
+```text
+教材
+ ↓
+知识点
+ ↓
+学生知识状态
+ ↓
+学习目标
+ ↓
+AI 协助出题
+ ↓
+学生作答
+ ↓
+AI 协助批改
+ ↓
+教师确认
+ ↓
+学习证据
+ ↓
+学生知识状态更新
+ ↓
+下一轮 AI 出题
+```
 
-* 查看作业
-* 查看考试
-* 在线答题
-* 提交答案
-* 查看成绩
-* 查看教师反馈
-* 查看学习档案
+---
 
-## 5.3 Admin
+# 2. 产品核心目标
 
-可以：
+系统需要解决两个核心问题：
 
-* 系统配置
-* 用户管理
-* LLM 配置
-* Agent 配置
-* Job 管理
-* Audit Log
+## 问题 A：如何更好地出题？
 
-在小规模部署中，Admin 可以由 Teacher 兼任。
+根据：
+
+* 教材
+* 当前章节
+* 知识点
+* 学生掌握情况
+* 学生错误类型
+* 历史题目
+* 学习目标
+
+由 AI **辅助教师生成合适的题目**。
+
+---
+
+## 问题 B：如何更高效地批改？
+
+根据：
+
+* 题目
+* 标准答案
+* Rubric
+* 学生答案
+* OCR / Vision 结果
+
+由 AI **辅助教师批改**。
+
+---
+
+# 3. AI 的定位
+
+AI 是：
+
+> **Teacher Assistant，而不是 Teacher Replacement。**
+
+AI 可以：
+
+```text
+生成
+分析
+识别
+建议
+批改
+归类
+推荐
+```
+
+但不能默认：
+
+```text
+AI = 最终教师判断
+```
+
+核心原则：
+
+```text
+AI Suggestion
+      ↓
+Teacher Review
+      ↓
+Official Result
+```
+
+---
+
+# 4. 核心学习闭环
+
+系统完整闭环：
+
+```text
+教材 / 课程
+      ↓
+知识体系
+      ↓
+学生知识状态
+      ↓
+学习目标
+      ↓
+AI 协助出题
+      ↓
+作业 / 练习 / 考试
+      ↓
+学生作答
+      ↓
+OCR / Vision
+      ↓
+AI 协助批改
+      ↓
+教师确认
+      ↓
+Learning Evidence
+      ↓
+学生知识状态更新
+      ↓
+下一轮学习目标
+      ↓
+AI 协助出题
+```
+
+最终形成：
+
+> **AI 出题 → 学生学习 → AI 批改 → 教师确认 → 状态更新 → AI 再出题**
+
+---
+
+# 5. 产品核心数据闭环
+
+系统核心不是“题目”，而是：
+
+```text
+Student
+   ↓
+Student Knowledge State
+   ↓
+Learning Objective
+   ↓
+Learning Plan
+   ↓
+Question
+   ↓
+Student Answer
+   ↓
+AI Grading
+   ↓
+Teacher Confirmation
+   ↓
+Learning Evidence
+   ↓
+Student Knowledge State
+```
 
 ---
 
 # 6. 部署规模
 
-系统明确定位为：
-
-> **Single Machine / Small Classroom**
-
-目标：
+目标规模：
 
 ```text
-Teachers       1–2
-Students       < 5
-Classes        1–2
-Online Users   ≤ 5
+教师：1–2
+学生：< 5
+班级：1–2
+在线用户：≤ 5
 ```
 
-不要求：
+部署：
 
-* 大规模 SaaS
-* 高并发
-* 微服务集群
-* GPU 集群
-* Kubernetes
+```text
+Single Machine
+```
+
+不是大型 SaaS。
 
 ---
 
-# 7. 最低运行环境
+# 7. 硬件约束
 
-## 7.1 CPU
-
-```text
-2 CPU cores
-```
-
-## 7.2 Memory
+最低目标：
 
 ```text
-4 GB RAM
+CPU：2 cores
+RAM：4 GB
+GPU：None
 ```
 
-## 7.3 GPU
-
-```text
-No GPU
-```
-
-## 7.4 Storage
-
-最低：
-
-```text
-50 GB
-```
-
-推荐：
-
-```text
-100 GB+
-```
-
-因为扫描试卷、教材 PDF、图片和导出文件可能占用大量磁盘。
+系统核心功能不得依赖 GPU。
 
 ---
 
-# 8. 支持操作系统
-
-支持：
+# 8. CPU-only 架构
 
 ```text
-Ubuntu 22.04+
-Ubuntu 24.04+
-macOS
-```
-
-CPU-only。
-
-系统不得依赖：
-
-```text
-CUDA
-NVIDIA
-MPS
-GPU driver
-```
-
----
-
-# 9. CPU-only AI 架构
-
-由于没有 GPU，系统采用：
-
-```text
+Browser
+   ↓
+React
+   ↓
 FastAPI
-   │
-   ├── SQLite
-   │
-   ├── Local File Store
-   │
-   └── Async Job Queue
-          │
-          ├── CPU OCR
-          ├── CPU embedding
-          └── LLM API
-```
-
-LLM 可以有两种模式：
-
-### Mode A：External LLM
-
-推荐：
-
-```text
-System
    ↓
-OpenAI-compatible API
+SQLite
    ↓
-Remote LLM
+Job Queue
+   ↓
+AI / OCR / Vision
 ```
 
-本地只负责：
+AI 优先使用：
 
-* prompt
-* data preparation
-* API request
-* result validation
-* database storage
+```text
+External OpenAI-compatible API
+```
 
-### Mode B：Local Small LLM
-
-允许运行小型 CPU 模型。
-
-但是：
-
-> 本地大模型不是系统运行前提。
+本地不要求运行大型 LLM。
 
 ---
 
-# 10. CPU 使用原则
-
-2 cores / 4 GB RAM 环境必须避免：
-
-* 同时运行多个大型模型
-* 多个 OCR 任务并行
-* 大规模 embedding
-* 大量 PDF 同时处理
-* 内存中保存大型文档
-* 将整个教材一次性送入 LLM
-
-采用：
-
-```text
-Queue
- ↓
-One Heavy Job
- ↓
-Release Memory
- ↓
-Next Job
-```
-
-默认：
-
-```text
-CPU workers = 1
-```
-
-可以配置为：
-
-```text
-max_workers = 1
-```
-
-必要时最多：
-
-```text
-2
-```
-
-但默认不建议。
-
----
-
-# 11. 内存预算
-
-4 GB RAM 环境下建议：
-
-```text
-OS                    ~1 GB
-SQLite + FastAPI      ~0.5 GB
-Frontend/browser      external
-Job worker            ~0.5 GB
-OCR                   ~0.5–1 GB
-Other                  remainder
-```
-
-原则：
-
-> 重型任务必须串行执行。
-
----
-
-# 12. 技术栈
+# 9. 技术栈
 
 ## Backend
 
 ```text
-Python 3.11+
+Python
 FastAPI
 SQLAlchemy
 Alembic
-SQLite WAL
+SQLite
 ```
 
 ## Frontend
@@ -418,10 +274,10 @@ Vite
 ## AI
 
 ```text
-LLM API
+LLM
+Vision
 OCR
-Vision API（可选）
-Embedding API（可选）
+Embedding
 ```
 
 ## Documents
@@ -437,41 +293,44 @@ WebP
 
 ---
 
-# 13. 数据库
+# 10. 数据库
 
 使用：
 
-> **SQLite + WAL**
+```text
+SQLite + WAL
+```
 
 原因：
 
-* 学生数量 < 5
-* 并发非常低
-* 单机部署
-* 数据量有限
-* 安装简单
-* 不需要数据库服务器
+* 小规模
+* 单机
+* 低并发
+* 易部署
+* 4GB RAM
+* 不需要 PostgreSQL
+
+大型文件不得直接存入 SQLite BLOB。
 
 ---
 
-# 14. 文件存储
-
-采用本地文件系统：
+# 11. 用户角色
 
 ```text
-data/
-├── textbooks/
-├── materials/
-├── students/
-├── submissions/
-├── exports/
-├── jobs/
-└── cache/
+ADMIN
+TEACHER
+STUDENT
+```
+
+小型部署允许：
+
+```text
+ADMIN = TEACHER
 ```
 
 ---
 
-# 15. 登录
+# 12. 登录
 
 默认教师：
 
@@ -483,15 +342,13 @@ username = yun
 
 ```text
 .env
+
 PASS_WORD=
 ```
 
-禁止：
+密码不得提交 Git。
 
-* 将密码写入 Git
-* 在源码中 hardcode 密码
-
-第一次登录：
+首次登录：
 
 ```text
 Login
@@ -499,38 +356,88 @@ Login
 Force Password Change
 ```
 
-密码：
-
-* Argon2
-* 或 bcrypt
-
-Session：
-
-* HttpOnly Cookie
-* CSRF
-* Secure Cookie（HTTPS）
-
----
-
-# 16. Teacher Dashboard
-
-显示：
+使用：
 
 ```text
-学生数量
-当前教材
-当前章节
-待批改
-待确认 AI 批改
-近期考试
-薄弱知识点
-最近成绩
-Agent Job
+Argon2 / bcrypt
+HttpOnly Cookie
+CSRF
+RBAC
 ```
 
 ---
 
-# 17. Student Management
+# 13. Teacher 页面
+
+```text
+Dashboard
+
+Students
+Classes
+Student Archive
+
+Textbooks
+Materials
+
+Knowledge Points
+Knowledge Graph
+
+AI Question Generation
+Question Bank
+Question Sets
+Similar Questions
+
+Learning Diagnosis
+Learning Plans
+Learning Sessions
+
+Assignments
+Exams
+Exam Editor
+
+Submissions
+AI Grading
+Teacher Review
+
+Learning Analysis
+
+Material Agent
+Knowledge Update
+Question Bank Update
+
+PDF Export
+DOCX Export
+
+Settings
+Audit
+```
+
+---
+
+# 14. Student 页面
+
+```text
+Dashboard
+
+Today's Learning
+Learning Plan
+
+Assignments
+Exams
+Online Exam
+
+Answer Submission
+
+Grades
+AI/Teacher Feedback
+
+Knowledge Progress
+Learning Archive
+```
+
+---
+
+# 15. Student Profile
 
 字段：
 
@@ -541,153 +448,50 @@ grade
 class
 textbook_version
 current_chapter
+
+strengths
+weak_points
+notes
+score_history
 ```
 
 可选：
 
 ```text
 parent_contact
-notes
 ```
 
 ---
 
-# 18. Student Learning Archive
-
-包含：
+# 16. 教材体系
 
 ```text
-基本信息
-教材
-章节
-作业历史
-考试历史
-成绩
-错误
-教师反馈
-知识点状态
-学习趋势
-Learning Evidence
-```
-
----
-
-# 19. Knowledge Point
-
-实体：
-
-```text
+Curriculum
+    ↓
+Textbook
+    ↓
+TextbookVersion
+    ↓
+Chapter
+    ↓
+Section
+    ↓
 KnowledgePoint
-KnowledgePointVersion
-KnowledgePointCandidate
-```
-
-字段：
-
-```text
-knowledge_point_id
-subject
-name
-description
-parent_id
-chapter_id
-difficulty
-status
-```
-
-支持树结构。
-
-例如：
-
-```text
-数学
-└── 方程
-    ├── 方程概念
-    ├── 移项
-    ├── 解方程
-    └── 应用题
 ```
 
 ---
 
-# 20. Knowledge Point Version
-
-知识点不能直接覆盖。
-
-采用：
-
-```text
-v1
-v2
-v3
-...
-```
-
-历史成绩引用具体版本。
-
----
-
-# 21. 学习证据
-
-实体：
-
-```text
-LearningEvidence
-```
-
-字段：
-
-```text
-student_id
-knowledge_point_id
-mastery_score
-confidence
-evidence_count
-last_assessed
-trend
-source
-source_id
-trust_level
-```
-
----
-
-# 22. Evidence Trust Level
-
-```text
-RAW
-AI_EXTRACTED
-VALIDATED
-TEACHER_CONFIRMED
-OFFICIAL
-```
-
-规则：
-
-```text
-AI result
-   ↓
-Teacher Review
-   ↓
-Teacher Confirm
-   ↓
-Learning Evidence
-```
-
-AI 不能直接生成正式学习证据。
-
----
-
-# 23. 教材管理
+# 17. 教材管理
 
 教师可以：
 
-* 创建教材
-* 选择教材
-* 上传教材
-* 创建教材版本
-* 查看章节
-* 查看教材内容
+```text
+选择教材
+上传教材
+创建教材版本
+管理章节
+查看教材
+```
 
 支持：
 
@@ -702,12 +506,14 @@ WebP
 
 ---
 
-# 24. 扫描教材
+# 18. 扫描教材 OCR
 
 流程：
 
 ```text
 Scanned PDF
+ ↓
+Page Extraction
  ↓
 OCR
  ↓
@@ -726,13 +532,21 @@ Table Detection
 Knowledge Point Extraction
 ```
 
-原始数据必须保留。
+保存：
+
+```text
+Original
+Page Image
+OCR
+Structured Content
+Page Number
+```
 
 ---
 
-# 25. Material Library
+# 19. Material
 
-Material 类型：
+类型：
 
 ```text
 TEXTBOOK
@@ -757,15 +571,17 @@ AGENT_DISCOVERED
 
 ---
 
-# 26. Material Agent
+# 20. Material Agent
 
-教师选择教材后，Material Agent 可以周期性寻找：
+Material Agent 可以定期发现：
 
-* 教材资料
-* 练习
-* 公开试卷
-* 公开答案
-* 公开解析
+```text
+教材相关材料
+公开练习
+公开试卷
+公开答案
+公开解析
+```
 
 流程：
 
@@ -774,7 +590,7 @@ Textbook
  ↓
 Material Agent
  ↓
-Web Search
+Search
  ↓
 Material Candidate
  ↓
@@ -787,44 +603,500 @@ Material Library
 
 默认：
 
-```json
-{
-  "material_agent": {
-    "enabled": true,
-    "schedule": "weekly",
-    "max_candidates_per_run": 50,
-    "auto_import": false
-  }
-}
+```text
+auto_import = false
 ```
 
 ---
 
-# 27. 网络资料版权
+# 21. Internet Material
 
-必须保存：
+保存：
 
 ```text
 URL
 domain
 retrieved_at
 content_hash
-source metadata
-license information
+source_metadata
+license
 ```
 
-原则：
+网络发现的材料默认：
 
-* 网络发现 ≠ 官方资料
-* 不自动重新发布第三方版权材料
-* 优先保存来源和索引
-* 教师确认后才进入正式材料库
+```text
+NOT_OFFICIAL
+```
+
+教师确认之后才能进入正式材料体系。
 
 ---
 
-# 28. Question
+# 22. Knowledge Point
+
+实体：
+
+```text
+KnowledgePoint
+KnowledgePointVersion
+KnowledgePointCandidate
+```
 
 字段：
+
+```text
+knowledge_point_id
+subject
+name
+description
+parent_id
+chapter_id
+difficulty
+status
+```
+
+---
+
+# 23. 知识点示例
+
+```text
+数学
+└── 一元一次方程
+    ├── 方程概念
+    ├── 等式性质
+    ├── 移项
+    ├── 解方程
+    └── 应用题
+```
+
+---
+
+# 24. Knowledge Point Version
+
+知识点必须版本化：
+
+```text
+v1
+v2
+v3
+...
+```
+
+历史学习证据引用具体版本。
+
+---
+
+# 25. 学生知识状态
+
+核心实体：
+
+```text
+StudentKnowledgeState
+```
+
+字段：
+
+```text
+student_id
+knowledge_point_id
+mastery_score
+confidence
+evidence_count
+last_assessed
+last_practiced
+trend
+decay_risk
+status
+```
+
+例如：
+
+```text
+一元一次方程
+mastery = 0.72
+confidence = 0.88
+trend = improving
+
+移项
+mastery = 0.61
+
+应用题建模
+mastery = 0.34
+trend = declining
+```
+
+---
+
+# 26. Knowledge State History
+
+状态不能覆盖。
+
+保存：
+
+```text
+StudentKnowledgeStateHistory
+```
+
+例如：
+
+```text
+01-01    0.35
+01-10    0.47
+01-20    0.58
+02-01    0.71
+```
+
+---
+
+# 27. Learning Objective
+
+定义学习目标：
+
+```text
+LearningObjective
+```
+
+例如：
+
+```text
+Knowledge:
+一元一次方程应用题
+
+Current:
+0.34
+
+Target:
+0.80
+```
+
+每一个重要学习任务都应该能够追溯到一个 Learning Objective。
+
+---
+
+# 28. Learning Diagnosis
+
+系统根据：
+
+```text
+Student Knowledge State
++
+Learning Evidence
++
+Error Patterns
++
+Curriculum
++
+Teacher Feedback
+```
+
+生成：
+
+```text
+Diagnosis
+```
+
+例如：
+
+```text
+Priority 1:
+应用题建模
+
+Priority 2:
+移项
+
+Priority 3:
+综合迁移
+```
+
+---
+
+# 29. Learning Planner
+
+核心 Agent：
+
+```text
+Learning Planner Agent
+```
+
+输入：
+
+```text
+StudentKnowledgeState
+LearningEvidence
+ErrorPatterns
+LearningObjectives
+Textbook
+QuestionBank
+TeacherConstraints
+```
+
+输出：
+
+```text
+LearningPlan
+```
+
+---
+
+# 30. Learning Plan
+
+例如：
+
+```text
+学生：
+S001
+
+目标：
+掌握一元一次方程应用题
+
+Current:
+0.34
+
+Target:
+0.80
+```
+
+计划：
+
+```text
+Day 1:
+概念复习
+
+Day 2:
+简单应用题
+
+Day 3:
+变式题
+
+Day 4:
+综合题
+
+Day 5:
+Mini Test
+```
+
+---
+
+# 31. Learning Intervention
+
+支持：
+
+```text
+EXPLANATION
+EXAMPLE
+PRACTICE
+REVIEW
+QUIZ
+EXAM
+REFLECTION
+```
+
+一个典型干预：
+
+```text
+Diagnosis
+ ↓
+Concept Explanation
+ ↓
+Simple Practice
+ ↓
+Variation
+ ↓
+Assessment
+```
+
+---
+
+# 32. AI 核心能力一：协助出题
+
+AI Question Generation 是系统的一级能力。
+
+目标：
+
+> 根据教材、知识点、学习目标和学生状态，帮助教师快速生成合适题目。
+
+---
+
+# 33. AI 出题输入
+
+```text
+学科
+年级
+教材
+章节
+知识点
+学生知识状态
+薄弱知识点
+错误类型
+学习目标
+题目数量
+难度
+题型
+预计答题时间
+是否需要图形
+是否需要证明
+是否需要开放题
+历史题目
+```
+
+---
+
+# 34. AI 出题输出
+
+每道题：
+
+```text
+question
+answer
+solution
+rubric
+knowledge_points
+difficulty
+question_type
+estimated_time
+error_patterns
+```
+
+例如：
+
+```text
+题目：
+……
+
+知识点：
+移项
+
+难度：
+0.55
+
+题型：
+应用题
+
+预计时间：
+5 min
+
+标准答案：
+……
+
+评分标准：
+……
+```
+
+---
+
+# 35. AI 出题不是随机生成
+
+系统应该从：
+
+```text
+Student State
+```
+
+开始。
+
+例如：
+
+```text
+应用题建模
+mastery = 0.34
+```
+
+AI 不应该简单生成：
+
+```text
+10 道应用题
+```
+
+而应该生成具有学习目的的题组：
+
+```text
+2 道概念题
+3 道简单建模题
+2 道变式题
+1 道综合题
+```
+
+---
+
+# 36. AI 出题流程
+
+```text
+Learning Objective
+       ↓
+Student Knowledge State
+       ↓
+Question Planning
+       ↓
+LLM
+       ↓
+Question Candidates
+       ↓
+Validation
+       ↓
+Duplicate Detection
+       ↓
+Teacher Review
+       ↓
+QuestionVersion
+       ↓
+Question Bank
+```
+
+---
+
+# 37. Question Validator
+
+检查：
+
+```text
+年级是否匹配
+章节是否匹配
+知识点是否正确
+答案是否存在
+答案是否一致
+难度是否合理
+题型是否正确
+预计时间是否合理
+是否重复
+是否超出教材
+是否需要图形
+是否需要 Rubric
+```
+
+数学题额外检查：
+
+```text
+计算量
+答案可验证性
+推理要求
+证明完整性
+```
+
+---
+
+# 38. 教师出题审核
+
+教师可以：
+
+```text
+接受
+修改题干
+修改答案
+修改知识点
+修改难度
+修改评分标准
+重新生成
+删除
+加入题库
+```
+
+只有教师发布后成为正式题目。
+
+---
+
+# 39. Question Bank
+
+Question：
 
 ```text
 question_id
@@ -844,9 +1116,7 @@ status
 
 ---
 
-# 29. Question Version
-
-题目版本化：
+# 40. Question Version
 
 ```text
 Question
@@ -855,109 +1125,23 @@ Question
  └── Version 3
 ```
 
-发布后的版本 immutable。
-
----
-
-# 30. Question Generation
-
-输入：
+已发布版本：
 
 ```text
-grade
-textbook
-chapter
-knowledge_points
-student_scores
-weak_points
-question_count
-difficulty
-question_types
-due_date
-estimated_time
-```
-
-默认：
-
-```text
-Set A
-Set B
+IMMUTABLE
 ```
 
 ---
 
-# 31. 学科规则
+# 41. Similar Question Engine
 
-## Language
-
-重点：
-
-* composition
-* reading
-* expression
-
-作文必须有 Rubric。
-
-## Math
-
-重点：
-
-* reasoning
-* proof
-* integrated problems
-* open questions
-
-避免大量机械计算。
-
-## Geometry
-
-要求图形。
-
-优先：
+每道题生成：
 
 ```text
-SVG
+QuestionSignature
 ```
 
----
-
-# 32. Question Validator
-
-验证：
-
-```text
-Grade
-Chapter
-Knowledge Point
-Difficulty
-Question Type
-Answer
-Rubric
-Estimated Time
-Duplicate
-Computation Load
-Diagram
-Composition Rubric
-```
-
----
-
-# 33. Question Bank
-
-支持：
-
-* 手工题
-* 教材题
-* 导入题
-* AI 生成题
-* 历史试卷题
-* Agent 发现题
-
----
-
-# 34. Similar Question Engine
-
-Question Signature：
+包括：
 
 ```text
 knowledge_points
@@ -966,38 +1150,621 @@ question_type
 capability
 cognitive_level
 difficulty
-estimated_time
 solution_structure
 error_types
 ```
 
-支持：
+搜索：
 
 ```text
 同知识点 + 同技能
 同知识点 + 不同题型
 同技能 + 不同知识点
-更简单迁移题
-更困难迁移题
+更简单
+更困难
+迁移题
 ```
 
-不以文本相似度作为唯一标准。
+目标：
+
+> 找到“学习功能相同”的题，而不是只找文字相似题。
 
 ---
 
-# 35. Question Bank Incremental Update
+# 42. AI 核心能力二：协助批改
+
+AI Grading 是系统第二个一级 AI 能力。
+
+目标：
+
+> **降低教师批改工作量，同时保留教师最终判断权。**
+
+---
+
+# 43. AI 批改输入
+
+```text
+Question
+Standard Answer
+Rubric
+Student Answer
+```
+
+如果是纸质答案：
+
+```text
+Original Image
++
+OCR Result
++
+Vision Result
+```
+
+---
+
+# 44. AI 批改输出
+
+```text
+suggested_score
+rubric_results
+correctness
+error_type
+knowledge_points
+feedback
+confidence
+```
+
+---
+
+# 45. AI 批改示例
+
+题目：
+
+```text
+2x + 3 = 9
+```
+
+学生：
+
+```text
+2x = 9 + 3
+x = 6
+```
+
+AI：
+
+```text
+suggested_score = 0
+error_type = SIGN_ERROR
+knowledge_point = 移项
+confidence = 0.96
+```
+
+建议反馈：
+
+```text
+移项时符号发生错误。
+```
+
+---
+
+# 46. AI 批改流程
+
+```text
+Student Answer
+      ↓
+OCR / Vision
+      ↓
+Structured Answer
+      ↓
+Question Matching
+      ↓
+AI Grading
+      ↓
+Score Suggestion
+      ↓
+Error Analysis
+      ↓
+Knowledge Point Analysis
+      ↓
+Teacher Review
+```
+
+---
+
+# 47. 教师批改界面
+
+同时显示：
+
+```text
+原始答案
+OCR
+标准答案
+Rubric
+AI 建议分数
+AI 错误类型
+AI 知识点
+AI Feedback
+Confidence
+```
+
+操作：
+
+```text
+Accept AI
+Edit
+Manual Grade
+```
+
+---
+
+# 48. AI 不能直接成为正式成绩
+
+必须：
+
+```text
+AI Suggestion
+       ↓
+Teacher Confirmation
+       ↓
+Official Grade
+```
+
+AI 不能直接修改：
+
+```text
+正式成绩
+正式学习证据
+学生知识状态
+```
+
+---
+
+# 49. Grade Versioning
+
+保存：
+
+```text
+previous_score
+new_score
+reason
+changed_by
+changed_at
+```
+
+---
+
+# 50. OCR / Vision
+
+支持：
+
+```text
+JPG
+JPEG
+PNG
+WebP
+PDF
+```
+
+流程：
+
+```text
+Upload
+ ↓
+Validate
+ ↓
+Immutable Storage
+ ↓
+SHA256
+ ↓
+OCR
+ ↓
+Vision
+ ↓
+Structured Answer
+ ↓
+AI Grading
+```
+
+---
+
+# 51. 原始文件不可修改
+
+必须：
+
+```text
+Original = Immutable
+```
+
+派生：
+
+```text
+OCR
+Vision
+Grading
+Annotation
+```
+
+均不得覆盖原始文件。
+
+---
+
+# 52. OCR Confidence
+
+保存：
+
+```text
+answer_confidence
+score_confidence
+annotation_confidence
+question_match_confidence
+```
+
+低置信度：
+
+```text
+REVIEW_REQUIRED
+```
+
+教师可以：
+
+```text
+重新 OCR
+手工输入
+跳过 OCR
+```
+
+---
+
+# 53. Teacher Annotation
+
+支持识别：
+
+```text
+圈错
+批注
+扣分
+得分
+文字反馈
+```
+
+最终统一：
+
+```text
+TeacherAnnotation
+TeacherScore
+```
+
+---
+
+# 54. Historical Exam Import
+
+支持：
+
+```text
+历史试卷
+历史作业
+扫描试卷
+```
+
+流程：
+
+```text
+Scan
+ ↓
+Question Detection
+ ↓
+Student Answer
+ ↓
+Teacher Score
+ ↓
+Teacher Annotation
+ ↓
+Question Matching
+ ↓
+Knowledge Point Matching
+ ↓
+Teacher Confirmation
+ ↓
+Learning Evidence
+```
+
+---
+
+# 55. Learning Evidence
+
+核心实体：
+
+```text
+LearningEvidence
+```
+
+字段：
+
+```text
+evidence_id
+student_id
+knowledge_point_id
+question_id
+source_type
+source_id
+correct
+score
+difficulty
+error_type
+teacher_feedback
+confidence
+trust_level
+created_at
+```
+
+来源：
+
+```text
+HOMEWORK
+QUIZ
+EXAM
+ONLINE_EXAM
+PAPER_EXAM
+HISTORICAL_EXAM
+PRACTICE
+TEACHER_OBSERVATION
+```
+
+---
+
+# 56. Evidence Trust Level
+
+```text
+RAW
+AI_EXTRACTED
+VALIDATED
+TEACHER_CONFIRMED
+OFFICIAL
+```
+
+规则：
+
+> 只有 Teacher Confirmed 数据才能进入正式学习状态。
+
+---
+
+# 57. Error Pattern
+
+支持：
+
+```text
+SIGN_ERROR
+CONCEPT_MISUNDERSTANDING
+FORMULA_ERROR
+CALCULATION_ERROR
+READING_ERROR
+REASONING_GAP
+PROOF_GAP
+DIAGRAM_ERROR
+KNOWLEDGE_CONFUSION
+CARELESS_ERROR
+MODELING_ERROR
+```
+
+---
+
+# 58. 学生状态更新
+
+```text
+Old Knowledge State
++
+New Learning Evidence
+ ↓
+State Update Engine
+ ↓
+New Knowledge State
+```
+
+考虑：
+
+```text
+difficulty
+recency
+correctness
+error_type
+teacher_confirmation
+historical_performance
+```
+
+不是简单：
+
+```text
+正确率 = mastery
+```
+
+---
+
+# 59. Knowledge Decay
+
+考虑遗忘：
+
+```text
+Last Evidence:
+120 days ago
+
+Mastery:
+0.82
+
+Effective Mastery:
+下降
+```
+
+因此自动安排：
+
+```text
+Review
+```
+
+---
+
+# 60. Spaced Review
+
+初始策略：
+
+```text
+Weak:
+1 day
+
+Medium:
+3 days
+
+Good:
+7 days
+
+Strong:
+14 days
+
+Stable:
+30 days
+```
+
+---
+
+# 61. AI 出题与 AI 批改的完整闭环
+
+核心：
+
+```text
+Student Knowledge State
+        ↓
+Learning Objective
+        ↓
+AI Question Planning
+        ↓
+AI Question Generation
+        ↓
+Teacher Review
+        ↓
+Assignment / Exam
+        ↓
+Student Answer
+        ↓
+OCR / Vision
+        ↓
+AI Grading
+        ↓
+Teacher Confirmation
+        ↓
+Learning Evidence
+        ↓
+Knowledge State Update
+        ↓
+New Diagnosis
+        ↓
+New Learning Objective
+        ↓
+AI Question Generation
+```
+
+---
+
+# 62. 典型学生场景
+
+初始状态：
+
+```text
+应用题建模 = 0.31
+```
+
+系统诊断：
+
+```text
+建模能力不足
+```
+
+AI 出题：
+
+```text
+2 道简单建模题
+3 道普通应用题
+2 道变式题
+1 道综合题
+```
+
+学生作答。
+
+AI 批改：
+
+```text
+5 / 8 正确
+
+3 个错误：
+
+2 × MODELING_ERROR
+1 × CALCULATION_ERROR
+```
+
+教师确认。
+
+状态更新：
+
+```text
+0.31 → 0.45
+```
+
+三天后复习。
+
+AI 再出题：
+
+```text
+2 道迁移题
+```
+
+AI 批改：
+
+```text
+2 / 2 正确
+```
+
+状态：
+
+```text
+0.45 → 0.58
+```
+
+系统继续：
+
+```text
+综合题
+```
+
+这就是：
+
+```text
+出题
+ ↓
+作答
+ ↓
+批改
+ ↓
+证据
+ ↓
+状态
+ ↓
+再出题
+```
+
+---
+
+# 63. AI Question Bank Incremental Update
 
 输入：
 
 ```text
-student_errors
-knowledge_gaps
-question_coverage
-duplicate_rate
-question_usage
-difficulty
-teacher_feedback
-new_materials
+学生错误
+知识缺口
+题目覆盖率
+题目重复率
+题目使用次数
+难度
+教师反馈
+教材变化
 ```
 
 流程：
@@ -1024,15 +1791,141 @@ Teacher Review
 Question Bank
 ```
 
-默认：
+---
+
+# 64. AI Knowledge Base Incremental Update
+
+输入：
 
 ```text
-auto_publish = false
+教材
+已有知识点
+历史题目
+新题目
+学生错误
+教师反馈
+```
+
+AI 可以建议：
+
+```text
+ADD
+MODIFY
+MERGE
+SPLIT
+DEPRECATE
+```
+
+流程：
+
+```text
+LLM
+ ↓
+KnowledgePointCandidate
+ ↓
+Validator
+ ↓
+Teacher Review
+ ↓
+KnowledgePointVersion
 ```
 
 ---
 
-# 36. 作业
+# 65. AI Agent 划分
+
+系统主要 AI Agent：
+
+```text
+Material Agent
+
+Question Planning Agent
+
+Question Generation Agent
+
+Question Validation Agent
+
+Grading Agent
+
+Error Analysis Agent
+
+Diagnosis Agent
+
+Learning Planner Agent
+
+Knowledge Update Agent
+
+Question Bank Update Agent
+```
+
+---
+
+# 66. Agent 权限原则
+
+Agent 默认：
+
+```text
+READ
+ANALYZE
+SUGGEST
+GENERATE
+```
+
+不允许直接修改：
+
+```text
+Official Grade
+Official Evidence
+Published Exam
+Published QuestionVersion
+Student Knowledge State
+```
+
+除非经过明确的系统规则和教师确认。
+
+---
+
+# 67. Agent Tools
+
+可以访问：
+
+```text
+SQLite
+Textbook Retrieval
+Material Retrieval
+OCR
+Vision
+Question Bank
+Question Signature
+Student Knowledge State
+Learning Evidence
+Rubric
+PDF
+SVG
+```
+
+---
+
+# 68. LLM Traceability
+
+每次调用保存：
+
+```text
+agent
+prompt_hash
+input_json
+output_json
+model
+model_version
+tokens
+timestamp
+latency
+job_id
+```
+
+---
+
+# 69. Assignment
 
 状态：
 
@@ -1050,26 +1943,28 @@ CANCELLED
 
 ---
 
-# 37. 考试
+# 70. Exam
 
 支持：
 
 ```text
-正式考试
-模拟考试
-章节考试
-阶段考试
-在线考试
-纸质考试
+Formal Exam
+Mock Exam
+Chapter Test
+Stage Test
+Online Exam
+Paper Exam
 ```
-
-Exam 独立于 Assignment。
 
 ---
 
-# 38. ExamVersion
+# 71. ExamVersion
 
-发布后 immutable。
+发布后：
+
+```text
+IMMUTABLE
+```
 
 包括：
 
@@ -1085,81 +1980,25 @@ time_limit
 
 ---
 
-# 39. PDF Export
-
-生成：
-
-### Student Version
-
-包括：
-
-* 题目
-* 图形
-* 公式
-* 分值
-* 答题空间
-* 页码
-
-不包括：
-
-* 答案
-* AI Prompt
-* 内部评分信息
-
-### Answer Version
-
-包括：
-
-* 标准答案
-* 解析
-
-### Teacher Version
-
-包括：
-
-* Rubric
-* 得分点
-* 评分说明
-
----
-
-# 40. DOCX Export
+# 72. Online Exam
 
 支持：
 
 ```text
-Chinese
-Formula
-Image
-SVG
-Table
-Question Number
-Points
-```
-
-教师可以继续编辑 Word。
-
----
-
-# 41. Online Exam
-
-支持：
-
-```text
-单选
-多选
-判断
-填空
-简答
-计算
-证明
-作文
-开放题
+MCQ
+Multi-select
+True/False
+Fill-in
+Short Answer
+Calculation
+Proof
+Composition
+Open Question
 ```
 
 ---
 
-# 42. Answer Input
+# 73. Online Answer
 
 支持：
 
@@ -1175,24 +2014,7 @@ Image
 
 ---
 
-# 43. Exam UI
-
-显示：
-
-```text
-考试名称
-剩余时间
-题目导航
-当前题
-答题区域
-上一题
-下一题
-提交
-```
-
----
-
-# 44. Server-authoritative Timer
+# 74. Server-authoritative Timer
 
 保存：
 
@@ -1202,11 +2024,17 @@ deadline
 submitted_at
 ```
 
-浏览器 timer 仅用于显示。
+浏览器 Timer 仅显示。
+
+服务器决定：
+
+```text
+是否超时
+```
 
 ---
 
-# 45. Autosave
+# 75. Autosave
 
 默认：
 
@@ -1220,23 +2048,19 @@ submitted_at
 10–30 seconds
 ```
 
-机制：
+使用：
 
 ```text
-Change Debounce
+Debounce
 +
 Periodic Save
 +
-Browser Local Draft
+Browser Draft
 ```
-
-服务器数据是最终数据源。
 
 ---
 
-# 46. ExamAttempt
-
-字段：
+# 76. ExamAttempt
 
 ```text
 attempt_id
@@ -1265,9 +2089,7 @@ GRADED
 
 ---
 
-# 47. Paper Exam
-
-流程：
+# 77. Paper Exam
 
 ```text
 Exam
@@ -1276,13 +2098,11 @@ PDF / DOCX
  ↓
 Print
  ↓
-Student handwriting
+Student Handwriting
  ↓
 Scan / Photo
  ↓
-Upload
- ↓
-OCR
+OCR / Vision
  ↓
 AI Grading
  ↓
@@ -1291,466 +2111,87 @@ Teacher Confirm
 
 ---
 
-# 48. Submission
+# 78. PDF 导出
 
-接受：
-
-```text
-JPG
-JPEG
-PNG
-WebP
-PDF
-```
-
-存储：
+教师创建试卷后可以生成：
 
 ```text
-data/
-students/
-{student_id}/
-submissions/
-{exam_or_assignment_id}/
-{timestamp}/
-original/
-metadata.json
-derived/
+Student Version
+Answer Version
+Rubric Version
 ```
 
-Original 永远不覆盖。
-
----
-
-# 49. Upload Security
-
-检查：
+学生版不能包含：
 
 ```text
-extension
-MIME
-magic bytes
-file size
-filename
-path traversal
-authentication
-authorization
+答案
+AI Prompt
+内部评分信息
 ```
-
----
-
-# 50. OCR
-
-CPU-only。
-
-建议：
-
-> OCR 任务一次只处理一个文件/小批次。
-
-流程：
-
-```text
-Upload
- ↓
-Validate
- ↓
-SHA256
- ↓
-Store Original
- ↓
-OCR
- ↓
-Structured Answer
- ↓
-Teacher Review
-```
-
----
-
-# 51. Vision
-
-由于系统没有 GPU：
-
-Vision 默认可以使用：
-
-```text
-Remote Vision API
-```
-
-而不是要求本地 GPU Vision Model。
 
 支持：
 
-* 手写答案
-* 几何图形
-* 教师批注
-* 分数识别
-* 页面布局
-
----
-
-# 52. 历史考试导入
-
-系统必须区分：
-
 ```text
-Question
-StudentAnswer
-TeacherAnnotation
-TeacherScore
-```
-
-例如：
-
-```text
-Question:
-2x + 3 = 9
-
-Student:
-x = 2
-
-Teacher:
-×
-0/10
-```
-
-不能只保存成一个 OCR 文本。
-
----
-
-# 53. Historical Assessment
-
-流程：
-
-```text
-Scan
- ↓
-Identify Student
- ↓
-Identify Exam
- ↓
-Question Detection
- ↓
-Student Answer Detection
- ↓
-Teacher Score Detection
- ↓
-Teacher Annotation Detection
- ↓
-Question Matching
- ↓
-Knowledge Point Matching
- ↓
-Teacher Confirm
- ↓
-Learning Evidence
+中文
+公式
+图片
+SVG
+表格
+题号
+分值
+页眉
+页脚
+页码
 ```
 
 ---
 
-# 54. Confidence
+# 79. DOCX 导出
 
-每个识别结果保存：
-
-```text
-answer_confidence
-score_confidence
-annotation_confidence
-question_match_confidence
-knowledge_point_confidence
-```
-
-低置信度：
+支持：
 
 ```text
-REVIEW_REQUIRED
+中文
+公式
+图片
+SVG 转换
+表格
+题号
+分值
 ```
 
-系统禁止自动猜测。
+教师可以继续手工修改 Word。
 
 ---
 
-# 55. AI Grading
-
-输入：
-
-```text
-Question
-Standard Answer
-Rubric
-Student Answer
-```
-
-输出：
-
-```text
-Suggested Score
-Rubric Result
-Feedback
-Knowledge Point Result
-Confidence
-```
-
----
-
-# 56. Teacher Final Authority
-
-教师界面：
-
-```text
-Original Answer
-OCR
-Standard Answer
-Rubric
-AI Suggested Score
-AI Feedback
-Knowledge Point
-Teacher Score
-Teacher Feedback
-```
-
-操作：
-
-```text
-Accept
-Edit
-Manual Grade
-```
-
-最终：
-
-```text
-TEACHER_CONFIRMED
-```
-
----
-
-# 57. Grade Versioning
+# 80. Student Learning Archive
 
 保存：
 
 ```text
-previous_score
-new_score
-reason
-changed_by
-changed_at
-```
-
----
-
-# 58. Learning Evidence
-
-正式学习证据只能来自：
-
-```text
-Teacher Confirmed
-```
-
-包括：
-
-```text
-Score
-Knowledge Assessment
+Assignment History
+Exam History
+Score Trends
+Knowledge Trends
+Mistakes
+Error Patterns
 Teacher Feedback
+Learning Plans
+Learning Sessions
+Learning Evidence
+```
+
+支持：
+
+```text
+PDF
+CSV
+Image ZIP
 ```
 
 ---
 
-# 59. LLM Knowledge Update
-
-输入：
-
-```text
-Textbook
-Chapter
-Existing Knowledge Points
-Historical Questions
-New Questions
-Student Errors
-Teacher Feedback
-```
-
-候选：
-
-```text
-ADD
-MODIFY
-MERGE
-SPLIT
-DEPRECATE
-```
-
-流程：
-
-```text
-LLM
- ↓
-Candidate
- ↓
-Validator
- ↓
-Teacher Review
- ↓
-Version
-```
-
----
-
-# 60. Student Progress
-
-系统持续维护：
-
-```text
-mastery
-confidence
-evidence_count
-trend
-```
-
-趋势：
-
-```text
-Improving
-Stable
-Declining
-Unknown
-```
-
----
-
-# 61. 个性化出题
-
-下一次出题使用：
-
-```text
-Textbook
-Chapter
-Knowledge State
-Weak Points
-Historical Scores
-Recent Errors
-Teacher Feedback
-Question Bank
-```
-
-系统生成针对性的练习。
-
----
-
-# 62. Material Agent
-
-周期：
-
-```text
-daily
-weekly
-monthly
-manual
-```
-
-默认：
-
-```text
-weekly
-```
-
-由于 CPU 资源很低，Agent 任务默认：
-
-> **串行执行，不允许多个 Material Agent Job 同时运行。**
-
----
-
-# 63. Async Job
-
-任务：
-
-```text
-MATERIAL_DISCOVERY
-MATERIAL_IMPORT
-OCR
-VISION
-KNOWLEDGE_UPDATE
-QUESTION_BANK_UPDATE
-QUESTION_GENERATION
-SIMILAR_QUESTION_SEARCH
-GRADING
-PDF_EXPORT
-DOCX_EXPORT
-ARCHIVE_EXPORT
-```
-
-状态：
-
-```text
-QUEUED
-RUNNING
-SUCCEEDED
-FAILED
-CANCELLED
-```
-
----
-
-# 64. Job Resource Policy
-
-由于：
-
-```text
-2 CPU
-4 GB RAM
-```
-
-默认：
-
-```text
-max_concurrent_heavy_jobs = 1
-```
-
-即：
-
-```text
-OCR
-  ↓
-完成
-  ↓
-释放内存
-  ↓
-Grading
-  ↓
-完成
-  ↓
-Question Generation
-```
-
-而不是：
-
-```text
-OCR + LLM + PDF + Embedding
-同时运行
-```
-
----
-
-# 65. LLM Trace
-
-每次调用记录：
-
-```text
-agent
-prompt_hash
-input_json
-output_json
-model
-model_version
-tokens
-timestamp
-latency
-job_id
-```
-
----
-
-# 66. Database Tables
+# 81. 数据库完整表
 
 ```text
 users
@@ -1760,6 +2201,7 @@ students
 textbooks
 textbook_versions
 chapters
+
 materials
 material_versions
 material_pages
@@ -1769,6 +2211,21 @@ material_sources
 knowledge_points
 knowledge_point_versions
 knowledge_point_candidates
+
+student_knowledge_states
+student_knowledge_state_history
+
+learning_objectives
+learning_plans
+learning_plan_items
+learning_sessions
+learning_interventions
+
+learning_evidence
+
+error_patterns
+student_error_evidence
+teacher_feedback
 
 questions
 question_versions
@@ -1802,7 +2259,6 @@ historical_assessment_questions
 
 student_progress
 student_progress_history
-learning_evidence
 
 llm_runs
 jobs
@@ -1821,7 +2277,113 @@ settings
 
 ---
 
-# 67. API
+# 82. 文件存储
+
+```text
+data/
+├── textbooks/
+├── materials/
+├── students/
+│   └── {student_id}/
+│       └── submissions/
+│           └── {exam_or_assignment_id}/
+│               └── {timestamp}/
+│                   ├── original/
+│                   ├── derived/
+│                   └── metadata.json
+├── exports/
+└── cache/
+```
+
+原始文件 immutable。
+
+---
+
+# 83. Async Job
+
+类型：
+
+```text
+MATERIAL_DISCOVERY
+MATERIAL_IMPORT
+OCR
+VISION
+KNOWLEDGE_UPDATE
+QUESTION_BANK_UPDATE
+QUESTION_GENERATION
+QUESTION_VALIDATION
+SIMILAR_QUESTION_SEARCH
+GRADING
+DIAGNOSIS
+LEARNING_PLAN_GENERATION
+STATE_UPDATE
+PDF_EXPORT
+DOCX_EXPORT
+ARCHIVE_EXPORT
+```
+
+状态：
+
+```text
+QUEUED
+RUNNING
+SUCCEEDED
+FAILED
+CANCELLED
+```
+
+---
+
+# 84. CPU 资源策略
+
+默认：
+
+```text
+CPU workers = 1
+max_concurrent_heavy_jobs = 1
+```
+
+原则：
+
+```text
+Web API
+不被 AI/OCR 阻塞
+```
+
+重任务：
+
+```text
+异步
+串行
+可恢复
+可重试
+```
+
+---
+
+# 85. Job Failure
+
+失败保存：
+
+```text
+input
+job
+error
+stack_trace
+llm_run
+```
+
+Retry：
+
+```text
+创建新 Job
+```
+
+不覆盖旧 Job。
+
+---
+
+# 86. API
 
 ```text
 /auth
@@ -1834,9 +2396,19 @@ settings
 /material-agent
 
 /knowledge-points
+/knowledge-graph
+
+/student-knowledge-state
+/learning-evidence
+
+/diagnosis
+/learning-objectives
+/learning-plans
+/learning-sessions
 
 /questions
 /question-bank
+/question-generation
 /similar-questions
 
 /assignments
@@ -1858,116 +2430,7 @@ settings
 
 ---
 
-# 68. 页面
-
-## Teacher
-
-```text
-/dashboard
-
-/students
-/students/:id
-
-/classes
-
-/textbooks
-/materials
-
-/knowledge-points
-
-/questions
-/question-bank
-/similar-questions
-
-/assignments
-
-/exams
-/exams/:id/editor
-
-/submissions
-/grading
-
-/learning-analysis
-
-/exports
-
-/settings
-/audit
-```
-
-## Student
-
-```text
-/dashboard
-/assignments
-/exams
-/exams/:id
-/exams/:id/attempt
-/grades
-/learning-archive
-```
-
----
-
-# 69. 性能要求
-
-由于只有：
-
-```text
-< 5 students
-2 CPU
-4 GB RAM
-```
-
-目标不是高并发，而是稳定运行。
-
-要求：
-
-```text
-普通 API P95 < 500 ms
-登录 < 1 s
-在线考试 ≤ 5 users
-```
-
-AI/OCR 等任务不计入普通 API latency。
-
----
-
-# 70. CPU 性能策略
-
-必须：
-
-1. 异步处理 OCR。
-2. 异步处理 LLM。
-3. 大 PDF 分页处理。
-4. 不一次性加载整个教材。
-5. 使用 streaming/chunk。
-6. OCR 完成后及时释放内存。
-7. embedding 批量但小 batch。
-8. LLM 使用远程 API 时不占本地 CPU 大量资源。
-9. 大型任务串行。
-10. 缓存已有 OCR 和 embedding。
-
----
-
-# 71. Cache
-
-缓存：
-
-```text
-OCR result
-PDF extraction
-Embedding
-Question signature
-Material hash
-LLM response（允许时）
-```
-
-如果输入 SHA256 没有变化，不重复执行昂贵任务。
-
----
-
-# 72. 安全
+# 87. Security
 
 必须：
 
@@ -1987,44 +2450,44 @@ Student Data Isolation
 
 ---
 
-# 73. 隐私
+# 88. Privacy
 
-LLM 外部调用必须可配置：
+外部 LLM API 配置：
 
 ```text
 provider
 model
-data retention
-external transmission
+data_retention
+external_transmission
 ```
 
-敏感学生数据可以：
+必要时：
 
 ```text
-redact
-pseudonymize
+Pseudonymization
+Redaction
 ```
 
-再发送到外部 LLM。
+---
+
+# 89. Copyright
+
+网络材料：
+
+```text
+URL
+Domain
+Retrieved Time
+Content Hash
+License
+Source Metadata
+```
+
+第三方材料不得自动重新公开发布。
 
 ---
 
-# 74. Copyright
-
-Material Agent：
-
-* 保存 URL
-* 保存 domain
-* 保存 hash
-* 保存 retrieved_at
-* 保存 license 信息
-* 不自动公开发布第三方材料
-
-教师上传材料的版权责任由教师/机构承担。
-
----
-
-# 75. 配置
+# 90. 配置
 
 `.env`：
 
@@ -2062,6 +2525,23 @@ LLM_MODEL=
       "auto_publish": false
     }
   },
+  "learning": {
+    "diagnosis": {
+      "enabled": true,
+      "schedule": "after_assessment"
+    },
+    "planning": {
+      "enabled": true,
+      "teacher_approval": true
+    },
+    "state_update": {
+      "enabled": true,
+      "teacher_confirmed_only": true
+    },
+    "spaced_review": {
+      "enabled": true
+    }
+  },
   "exam": {
     "allow_retake": false,
     "autosave_interval_seconds": 15
@@ -2078,107 +2558,138 @@ LLM_MODEL=
 
 ---
 
-# 76. install.sh
+# 91. Installation
 
-安装脚本：
+提供：
 
 ```text
 install.sh
 ```
 
-必须：
+功能：
 
-* 幂等
-* 创建 Python venv
-* 安装依赖
-* 初始化 SQLite
-* 执行 migration
-* 创建 data/
-* 创建默认教师
-* 安装 frontend
-* 构建 frontend
-* 启动 backend
-* 启动 worker
+```text
+创建 venv
+安装依赖
+初始化数据库
+执行 migrations
+创建目录
+创建默认教师
+Build frontend
+```
 
-禁止：
+必须幂等。
 
-* 覆盖 `.env`
-* 覆盖 `configure.json`
+不得覆盖：
+
+```text
+.env
+configure.json
+```
 
 ---
 
-# 77. 测试
+# 92. 测试
 
-## Unit Tests
+## Unit Test
+
+测试：
 
 ```text
 Question
-KnowledgePoint
 QuestionVersion
-StudentProgress
+KnowledgePoint
+KnowledgePointVersion
+StudentKnowledgeState
+LearningEvidence
+LearningPlan
+LearningSession
 Exam
 ExamVersion
 Score
-LearningEvidence
 ```
 
-## OCR Tests
+## AI Question Test
+
+测试：
 
 ```text
-Printed Text
-Scanned Text
-Handwriting
-Formula
-Teacher Score
-Teacher Annotation
-Geometry
+教材匹配
+知识点匹配
+答案
+难度
+重复题
+Rubric
 ```
 
-## Integration
+## AI Grading Test
+
+测试：
 
 ```text
-教材
- ↓
-知识点
- ↓
-题库
- ↓
-考试
- ↓
-学生作答
- ↓
-AI 批改
- ↓
-教师确认
- ↓
-学习档案
-```
-
-## Historical Exam
-
-```text
-扫描试卷
- ↓
-OCR
- ↓
-Question Matching
- ↓
-StudentAnswer
- ↓
-TeacherScore
- ↓
-TeacherAnnotation
- ↓
-Teacher Confirm
- ↓
-LearningEvidence
+客观题
+数学计算题
+证明题
+开放题
+作文
+手写答案
+公式
+图形题
 ```
 
 ---
 
-# 78. MVP Phase 1
+# 93. End-to-End Test
 
-必须首先完成：
+必须能够完整运行：
+
+```text
+教师登录
+ ↓
+创建学生
+ ↓
+选择教材
+ ↓
+导入教材
+ ↓
+OCR
+ ↓
+建立知识点
+ ↓
+建立学生知识状态
+ ↓
+诊断
+ ↓
+生成学习目标
+ ↓
+AI 协助出题
+ ↓
+教师确认
+ ↓
+发布作业
+ ↓
+学生作答
+ ↓
+AI 协助批改
+ ↓
+教师确认
+ ↓
+Learning Evidence
+ ↓
+Knowledge State Update
+ ↓
+重新诊断
+ ↓
+生成下一轮学习计划
+ ↓
+AI 再次出题
+```
+
+---
+
+# 94. MVP
+
+第一阶段：
 
 ```text
 Login
@@ -2187,7 +2698,7 @@ Student
  ↓
 Textbook
  ↓
-Material Upload
+Material
  ↓
 OCR
  ↓
@@ -2195,34 +2706,48 @@ Chapter
  ↓
 Knowledge Point
  ↓
+Student Knowledge State
+ ↓
+Diagnosis
+ ↓
+Learning Objective
+ ↓
+Learning Plan
+ ↓
 Question Bank
  ↓
 AI Question Generation
+ ↓
+Teacher Review
  ↓
 Assignment
  ↓
 Exam
  ↓
-PDF
- ↓
-DOCX
- ↓
 Online Exam
  ↓
-Scan Upload
+Paper Exam
+ ↓
+Scan
  ↓
 AI Grading
  ↓
 Teacher Confirm
  ↓
-Student Archive
+Learning Evidence
+ ↓
+State Update
+ ↓
+Next Learning Plan
 ```
+
+MVP 最重要的验收条件：
+
+> **学生完成一次学习后，系统能够根据学习结果产生下一次有依据的学习任务。**
 
 ---
 
-# 79. Phase 2
-
-增加：
+# 95. Phase 2
 
 ```text
 Material Discovery Agent
@@ -2231,173 +2756,188 @@ Question Bank Incremental Update
 Similar Question Engine
 Historical Exam Import
 Teacher Annotation Recognition
+Error Pattern Engine
+Spaced Review
+Intervention Outcome
 ```
 
 ---
 
-# 80. Phase 3
-
-增加：
+# 96. Phase 3
 
 ```text
 Automatic Knowledge Gap Discovery
+Student-specific Learning Policy
+Cross-textbook Knowledge Mapping
+Adaptive Intervention Sequencing
 Automatic Question Bank Maintenance
 Long-term Learning Path
-Cross-textbook Knowledge Mapping
 ```
 
 ---
 
-# 81. 核心不变量
+# 97. 核心产品原则
 
-### 1
+## 原则 1：AI 协助出题
 
-Original submission immutable。
+```text
+AI Generate
+    ↓
+Validation
+    ↓
+Teacher Review
+```
 
-### 2
+## 原则 2：AI 协助批改
 
-Published ExamVersion immutable。
+```text
+AI Grade
+    ↓
+Teacher Review
+    ↓
+Official Grade
+```
 
-### 3
+## 原则 3：教师是正式判断边界
 
-Published QuestionVersion immutable。
+```text
+AI
+ ↓
+Suggestion
+ ↓
+Teacher
+ ↓
+Official Evidence
+```
 
-### 4
+## 原则 4：学生知识状态是系统核心
 
-Historical assessment immutable。
+```text
+Question
+不是核心
 
-### 5
+Score
+不是核心
 
-AI grading ≠ final grade。
+Student Knowledge State
+才是核心
+```
 
-### 6
+## 原则 5：每一次学习产生证据
 
-AI extraction ≠ learning evidence。
+```text
+Learning
+ ↓
+Evidence
+```
 
-### 7
+## 原则 6：每一次证据影响下一次学习
 
-Teacher confirmation 是正式证据边界。
-
-### 8
-
-Internet material 默认不是 official material。
-
-### 9
-
-Knowledge Base 必须 versioned。
-
-### 10
-
-Question Bank 支持 incremental update。
-
-### 11
-
-重要操作必须 audit。
-
-### 12
-
-Student data 必须隔离。
-
-### 13
-
-Heavy AI/OCR jobs 默认串行。
-
-### 14
-
-系统在无 GPU 环境下必须可以完整运行。
-
-### 15
-
-系统不得依赖本地大型 LLM 才能完成核心业务流程。
+```text
+Evidence
+ ↓
+Knowledge State
+ ↓
+Learning Plan
+ ↓
+Question
+```
 
 ---
 
-# 82. 最终验收标准
+# 98. 最终系统闭环
 
-系统在以下环境：
+最终系统：
 
 ```text
-Ubuntu / macOS
-2 CPU cores
-4 GB RAM
-No GPU
+                         ┌───────────────┐
+                         │    教材课程     │
+                         └───────┬───────┘
+                                 ↓
+                         ┌───────────────┐
+                         │    知识体系     │
+                         └───────┬───────┘
+                                 ↓
+                         ┌───────────────┐
+                         │ 学生知识状态    │
+                         └───────┬───────┘
+                                 ↓
+                         ┌───────────────┐
+                         │     诊断       │
+                         └───────┬───────┘
+                                 ↓
+                         ┌───────────────┐
+                         │   学习目标      │
+                         └───────┬───────┘
+                                 ↓
+                         ┌───────────────┐
+                         │   学习计划      │
+                         └───────┬───────┘
+                                 ↓
+                    ┌────────────────────────┐
+                    │    AI 协助出题          │
+                    └───────────┬────────────┘
+                                ↓
+                         ┌───────────────┐
+                         │   教师审核      │
+                         └───────┬───────┘
+                                 ↓
+                         ┌───────────────┐
+                         │ 作业 / 考试     │
+                         └───────┬───────┘
+                                 ↓
+                         ┌───────────────┐
+                         │   学生作答      │
+                         └───────┬───────┘
+                                 ↓
+                         ┌───────────────┐
+                         │ OCR / Vision   │
+                         └───────┬───────┘
+                                 ↓
+                    ┌────────────────────────┐
+                    │    AI 协助批改          │
+                    └───────────┬────────────┘
+                                ↓
+                         ┌───────────────┐
+                         │   教师确认      │
+                         └───────┬───────┘
+                                 ↓
+                         ┌───────────────┐
+                         │ Learning       │
+                         │ Evidence       │
+                         └───────┬───────┘
+                                 ↓
+                         ┌───────────────┐
+                         │ 状态更新        │
+                         └───────┬───────┘
+                                 │
+                                 └──────────────→ 重新诊断
 ```
 
-且：
+---
+
+# 99. 一句话产品定义
+
+> **这是一个以学生知识状态为核心，由 AI 协助教师出题和批改，通过真实学习证据持续更新学生状态，并自动产生下一轮学习任务的学习陪伴系统。**
+
+核心闭环最终定义为：
 
 ```text
-Students < 5
-```
-
-必须能够完成：
-
-```text
-教师登录
-   ↓
-选择教材
-   ↓
-导入教材
-   ↓
-OCR
-   ↓
-章节识别
-   ↓
-知识点
-   ↓
-题库
-   ↓
-LLM 出题
-   ↓
-创建考试
-   ↓
-PDF / DOCX
-   ↓
-学生在线考试
-   ↓
-或扫描纸质考试
-   ↓
-OCR
-   ↓
+AI 出题
+ ↓
+学生作答
+ ↓
 AI 批改
-   ↓
+ ↓
 教师确认
-   ↓
-Learning Evidence
-   ↓
-学生学习档案
-   ↓
-下一轮个性化出题
+ ↓
+学习证据
+ ↓
+学生知识状态
+ ↓
+学习计划
+ ↓
+AI 再出题
 ```
 
----
-
-# 83. 最终产品架构
-
-```text
-                 Learning Companion
-                         │
-        ┌────────────────┼────────────────┐
-        │                │                │
-       教材             题库             学生
-        │                │                │
-        │                │                │
-        └────────┬───────┴───────┬────────┘
-                 │               │
-               考试            学习证据
-                 │               │
-                 └───────┬───────┘
-                         │
-                        LLM
-                         │
-              ┌──────────┴──────────┐
-              │                     │
-          知识库更新             题库更新
-              │                     │
-              └──────────┬──────────┘
-                         │
-                    个性化学习
-```
-
-最终定位：
-
-> **一个运行在普通 2-core / 4GB、无 GPU 环境上的小规模 AI Learning Companion System，以教材、学生答案、教师评分和学习证据为核心数据资产，通过外部 LLM/CPU AI 能力实现持续的知识库、题库和个性化学习更新。**
+这就是系统最核心的产品闭环。
