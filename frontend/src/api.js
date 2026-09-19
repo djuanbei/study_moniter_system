@@ -168,6 +168,8 @@ export const endpoints = {
     api.get(`/reports/learning/${studentId}?days=${days}`),
   paperPdfUrl: (setId, variant = 'student') =>
     `/api/exports/question-sets/${setId}/pdf?variant=${variant}`,
+  paperDocxUrl: (setId, variant = 'student') =>
+    `/api/exports/question-sets/${setId}/docx?variant=${variant}`,
 
   materials: () => api.get('/materials'),
   uploadMaterial: (formData) => api.upload('/materials', formData),

@@ -12,6 +12,7 @@ from app.middleware.audit import record_audit
 from app.models.assignments import QuestionSet
 from app.models.auth import User
 from app.models.students import Student
+from app.services.docx_export import question_set_docx
 from app.services.paper import question_set_pdf
 from app.services.reports import learning_report
 
@@ -49,6 +50,35 @@ def export_paper(
         content=pdf,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="paper-{set_id}-{variant}.pdf"'},
+    )
+
+
+@router.get("/exports/question-sets/{set_id}/docx")
+def export_paper_docx(
+    request: Request,
+    set_id: int,
+    variant: str = Query(default="student", pattern="^(student|answer|rubric)$"),
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Editable DOCX paper (PRD §79) — parents can hand-modify."""
+    _teacher_only(current)
+    qs = db.get(QuestionSet, set_id)
+    if not qs:
+        raise HTTPException(status_code=404, detail="Question set not found")
+    try:
+        blob = question_set_docx(db, qs, variant)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    record_audit(
+        db, action="export_paper_docx", user=current, request=request,
+        target_type="question_set", target_id=set_id, detail={"variant": variant},
+    )
+    db.commit()
+    return Response(
+        content=blob,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="paper-{set_id}-{variant}.docx"'},
     )
 
 

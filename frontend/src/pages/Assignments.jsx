@@ -72,6 +72,9 @@ export default function Assignments() {
                     <a className="btn-ghost" style={{ marginRight: 8 }}
                        href={endpoints.paperPdfUrl(a.question_set_id, 'student')}
                        target="_blank" rel="noreferrer">导出试卷</a>
+                    <a className="btn-ghost" style={{ marginRight: 8 }}
+                       href={endpoints.paperDocxUrl(a.question_set_id, 'student')}
+                       target="_blank" rel="noreferrer">DOCX</a>
                     {a.status === 'assigned' && <button className="btn btn-danger" onClick={() => cancel(a.id)}>取消</button>}
                   </td>
                 </tr>
