@@ -394,6 +394,56 @@ class MaterialOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# --- Historical assessment import (PRD §54–55) ---
+
+class HistoricalQuestionOut(BaseModel):
+    id: int
+    order: int
+    question_text: str
+    student_answer: Optional[str]
+    score: Optional[float]
+    max_score: Optional[float]
+    annotation: Optional[str]
+    knowledge_point_name: Optional[str]
+    error_type: Optional[str]
+    confidence: Optional[float]
+    status: str
+    evidence_id: Optional[int]
+    model_config = ConfigDict(from_attributes=True)
+
+
+class HistoricalAssessmentOut(BaseModel):
+    id: int
+    material_id: Optional[int]
+    student_id: int
+    exam_title: str
+    exam_date: Optional[date]
+    status: str
+    analysis_json: Optional[dict[str, Any]]
+    questions: list[HistoricalQuestionOut] = []
+    model_config = ConfigDict(from_attributes=True)
+
+
+class HistoryAnalyzeIn(BaseModel):
+    material_id: int
+    student_id: int
+    exam_title: str
+    exam_date: Optional[date] = None
+
+
+class HistoryConfirmItemIn(BaseModel):
+    id: int
+    knowledge_point_name: Optional[str] = None
+    correct: Optional[bool] = None
+    score: Optional[float] = Field(default=None, ge=0, le=100)
+    error_type: Optional[str] = None
+    comment: Optional[str] = None
+
+
+class HistoryConfirmIn(BaseModel):
+    items: list[HistoryConfirmItemIn]
+
+
 # --- Settings ---
 
 class SettingsOut(BaseModel):

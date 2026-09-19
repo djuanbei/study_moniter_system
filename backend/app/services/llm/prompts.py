@@ -202,6 +202,35 @@ MATERIAL_ANALYZER = textwrap.dedent(
 ).strip()
 
 
+HISTORY_ANALYZER = textwrap.dedent(
+    """
+    You are the **Historical Exam Analyzer**. Below is OCR text from a scan of
+    a student's past exam / homework. Recover each question with the student's
+    answer, the awarded score, and any teacher/parent annotation.
+
+    Rules:
+      - Preserve original wording; mark unreadable parts as null
+      - "error_type" (only when the answer is wrong): SIGN_ERROR |
+        CONCEPT_MISUNDERSTANDING | FORMULA_ERROR | CALCULATION_ERROR |
+        READING_ERROR | REASONING_GAP | PROOF_GAP | DIAGRAM_ERROR |
+        KNOWLEDGE_CONFUSION | CARELESS_ERROR | MODELING_ERROR | null
+      - "confidence": 0.0-1.0 certainty of this extraction
+      - "knowledge_point": the concise knowledge point this question tests
+
+    OCR text:
+    {ocr_text}
+
+    Return JSON:
+      {{"items": [
+          {{"order": 1, "question_text": "...", "student_answer": "...",
+            "score": number|null, "max_score": number|null,
+            "annotation": "..."|null, "knowledge_point": "...",
+            "error_type": "..."|null, "confidence": 0.0..1.0}}
+      ]}}
+    """
+).strip()
+
+
 ARCHIVE_SUMMARY = textwrap.dedent(
     """
     You are the **Archive Summarizer**. Given the student's recent assignment

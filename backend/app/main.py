@@ -36,6 +36,7 @@ from app.routes import (
     errors,
     exports,
     grading,
+    historical,
     learning,
     materials,
     questions,
@@ -92,6 +93,7 @@ app.include_router(grading.router)
 app.include_router(learning.router)
 app.include_router(exports.router)
 app.include_router(materials.router)
+app.include_router(historical.router)
 app.include_router(archive.router)
 app.include_router(settings_router.router)
 app.include_router(dashboard.router)

@@ -176,6 +176,12 @@ export const endpoints = {
   materialFileUrl: (id) => `/api/materials/${id}/file`,
   deleteMaterial: (id) => api.del(`/materials/${id}`),
 
+  analyzeHistory: (data) => api.post('/historical/analyze', data),
+  historyList: (studentId) => api.get(`/historical?student_id=${studentId}`),
+  historyDetail: (id) => api.get(`/historical/${id}`),
+  confirmHistory: (id, items) => api.post(`/historical/${id}/confirm`, { items }),
+  deleteHistory: (id) => api.del(`/historical/${id}`),
+
   exportCsv: (id) => api.get(`/archive/students/${id}/csv`),
   exportPdf: (id) => api.get(`/archive/students/${id}/pdf`),
   exportImagesZip: (id) => api.get(`/archive/students/${id}/images.zip`),

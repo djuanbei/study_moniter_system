@@ -34,6 +34,7 @@ from app.services.llm.prompts import (
     CURRICULUM_PLANNER,
     DIAGRAM_GENERATOR,
     GRADING,
+    HISTORY_ANALYZER,
     LEARNING_PLANNER,
     MATERIAL_ANALYZER,
     QUESTION_GENERATOR,
@@ -482,6 +483,60 @@ def stage_material_analysis(
             db,
             agent="material_agent",
             purpose="material_analysis",
+            prompt=prompt,
+            output=None,
+            user_id=user.id if user else None,
+            duration_ms=duration,
+            status="error",
+            error=str(exc),
+        )
+        return None, None
+
+
+# ---------------------------------------------------------------------------
+# Stage 10: Historical exam analysis (PRD §54-55)
+# ---------------------------------------------------------------------------
+
+def stage_history_analysis(
+    db: Session, *, ocr_text: str, user: Optional[User]
+) -> tuple[Optional[list[dict]], Optional[int]]:
+    """Recover question/answer/score/annotation candidates from OCR text.
+
+    Returns (items, llm_run_id); items is None when the LLM fails or returns
+    nothing usable — the caller falls back to deterministic splitting.
+    """
+    prompt = HISTORY_ANALYZER.format(ocr_text=ocr_text[:12000])
+    llm = get_chat_model(purpose="history_analysis")
+    started = time.time()
+    try:
+        msg = llm.invoke(
+            [
+                SystemMessage(content="You are a deterministic assistant. Return ONLY JSON."),
+                HumanMessage(content=prompt),
+            ]
+        )
+        duration = int((time.time() - started) * 1000)
+        parsed = _safe_json_loads(msg.content)
+        out = parsed if isinstance(parsed, dict) else {"value": parsed}
+        run = _record_run(
+            db,
+            agent="error_analysis",
+            purpose="history_analysis",
+            prompt=prompt,
+            output=out,
+            user_id=user.id if user else None,
+            duration_ms=duration,
+        )
+        items = out.get("items")
+        if not isinstance(items, list) or not items:
+            return None, run.id
+        return items, run.id
+    except Exception as exc:  # noqa: BLE001
+        duration = int((time.time() - started) * 1000)
+        _record_run(
+            db,
+            agent="error_analysis",
+            purpose="history_analysis",
             prompt=prompt,
             output=None,
             user_id=user.id if user else None,

@@ -116,6 +116,7 @@ def _no_llm(monkeypatch):
 
     monkeypatch.setattr(pkg, "stage_material_analysis", _boom, raising=False)
     monkeypatch.setattr(pkg, "stage_learning_plan", _boom, raising=False)
+    monkeypatch.setattr(pkg, "stage_history_analysis", _boom, raising=False)
     monkeypatch.setattr(pkg, "generate_two_sets", _boom, raising=False)
     monkeypatch.setattr(agent, "get_chat_model", _boom, raising=False)
 
