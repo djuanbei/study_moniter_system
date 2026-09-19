@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from typing import Awaitable, Callable
+from typing import Awaitable, Callable, Optional
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware

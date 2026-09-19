@@ -12,9 +12,9 @@ if [ -z "$ARCHIVE" ] || [ ! -f "$ARCHIVE" ]; then
   exit 1
 fi
 
-# Refuse to overwrite without confirmation
+# Refuse to overwrite without confirmation (lowercase via tr: macOS ships bash 3.2)
 read -r -p "This will overwrite data/ and uploads/. Continue? [y/N] " ans
-if [ "${ans,,}" != "y" ]; then
+if [ "$(printf '%s' "$ans" | tr '[:upper:]' '[:lower:]')" != "y" ]; then
   echo "Aborted."
   exit 1
 fi

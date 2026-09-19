@@ -18,7 +18,7 @@ from app.security import constant_time_compare, issue_csrf_token, set_csrf_cooki
 
 
 EXEMPT_METHODS = {"GET", "HEAD", "OPTIONS"}
-EXEMPT_PATHS = {"/api/auth/login", "/api/auth/change-password", "/api/health", "/api/auth/bootstrap"}
+EXEMPT_PATHS = {"/api/auth/login", "/api/health", "/api/auth/bootstrap"}
 
 
 class CSRFMiddleware(BaseHTTPMiddleware):

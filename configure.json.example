@@ -9,6 +9,10 @@
     "max_upload_mb": 20,
     "allowed_image_types": ["jpg", "jpeg", "png", "webp", "pdf"]
   },
+  "web": {
+    "host": "0.0.0.0",
+    "port": 8000
+  },
   "academic": {
     "school_year_start_month": 9,
     "timezone": "Asia/Shanghai",

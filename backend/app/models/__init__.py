@@ -12,6 +12,7 @@ Layout:
 from app.models.auth import AuditLog, User
 from app.models.assignments import (
     Assignment,
+    GradeVersion,
     Grading,
     Question,
     QuestionSet,
@@ -19,6 +20,7 @@ from app.models.assignments import (
     SubmissionImage,
 )
 from app.models.learning import (
+    InterventionOutcome,
     KnowledgePoint,
     LearningEvidence,
     LearningObjective,
@@ -43,6 +45,7 @@ ALL_MODELS = [
     Submission,
     SubmissionImage,
     Grading,
+    GradeVersion,
     KnowledgePoint,
     StudentKnowledgeState,
     StudentKnowledgeStateHistory,
@@ -51,6 +54,7 @@ ALL_MODELS = [
     ParentFeedback,
     LearningPlan,
     LearningPlanItem,
+    InterventionOutcome,
     LLMRun,
     AuditLog,
     Setting,
@@ -77,6 +81,7 @@ __all__ = [
     "Submission",
     "SubmissionImage",
     "Grading",
+    "GradeVersion",
     "KnowledgePoint",
     "StudentKnowledgeState",
     "StudentKnowledgeStateHistory",
@@ -85,6 +90,7 @@ __all__ = [
     "ParentFeedback",
     "LearningPlan",
     "LearningPlanItem",
+    "InterventionOutcome",
     "LLMRun",
     "Setting",
 ]

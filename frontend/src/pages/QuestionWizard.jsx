@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { endpoints } from '../api.js'
 import { Card, Empty } from '../components/ui.jsx'
+import Diagram from '../components/Diagram.jsx'
 import { SEMESTERS } from '../constants.js'
 
 export default function QuestionWizard() {
@@ -213,7 +214,7 @@ export default function QuestionWizard() {
                       </label>
                     </div>
                     <div className="prompt mt-2">{q.prompt}</div>
-                    {q.diagram_svg && <div className="diagram-preview mt-2" dangerouslySetInnerHTML={{ __html: q.diagram_svg }} />}
+                    <Diagram format={q.diagram_format} svg={q.diagram_svg} />
                     <div className="mt-2">
                       {(q.knowledge_points || []).map(k => <span key={k} className="kp-chip">{k}</span>)}
                     </div>

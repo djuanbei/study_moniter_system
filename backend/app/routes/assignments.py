@@ -245,6 +245,8 @@ async def submit_assignment(
     ensure_can_access_student(current, a.student_id)
     if a.status == "cancelled":
         raise HTTPException(status_code=400, detail="该作业已取消")
+    if a.status == "graded":
+        raise HTTPException(status_code=400, detail="该作业已批改，不能重新提交")
 
     settings = get_settings()
 

@@ -237,6 +237,7 @@ class GradingConfirmIn(BaseModel):
     final_score: float = Field(ge=0, le=100)
     feedback: str
     per_question_scores: Optional[list[dict[str, Any]] | dict[str, Any]] = None
+    reason: Optional[str] = None  # required when modifying an already-confirmed score (PRD §50)
 
 
 class GradingOut(BaseModel):

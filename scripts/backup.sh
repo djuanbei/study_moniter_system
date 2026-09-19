@@ -29,13 +29,17 @@ con.execute("PRAGMA wal_checkpoint(TRUNCATE)")
 con.close()
 PY
 
-tar -czf "$OUT" \
-  -C "$PROJECT_ROOT" \
-  data/app.sqlite \
-  data/app.sqlite-wal \
-  data/app.sqlite-shm \
-  uploads \
-  .env
+# Archive DB + uploads + .env; include WAL sidecars only when present (they
+# disappear after a clean server shutdown, which would abort `tar` under
+# `set -e`).
+FILES=(data/app.sqlite uploads .env)
+for f in data/app.sqlite-wal data/app.sqlite-shm; do
+  if [ -f "$PROJECT_ROOT/$f" ]; then
+    FILES+=("$f")
+  fi
+done
+# Portable empty-array expansion for macOS bash 3.2 under `set -u`.
+tar -czf "$OUT" -C "$PROJECT_ROOT" ${FILES[@]+"${FILES[@]}"}
 
 # .env contains secrets; tighten permissions.
 chmod 600 "$OUT"

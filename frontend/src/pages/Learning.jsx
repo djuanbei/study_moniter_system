@@ -34,6 +34,7 @@ export default function Learning() {
   const [objectives, setObjectives] = useState([])
   const [diagnosis, setDiagnosis] = useState(null)
   const [plans, setPlans] = useState([])
+  const [report, setReport] = useState(null)
   const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState('')
   const [error, setError] = useState('')
@@ -64,9 +65,10 @@ export default function Learning() {
       endpoints.learningObjectives(studentId),
       endpoints.diagnosis(studentId),
       endpoints.learningPlans(studentId),
+      endpoints.learningReport(studentId, 7).catch(() => null),
     ])
-      .then(([st, ob, dg, pl]) => {
-        setStates(st); setObjectives(ob); setDiagnosis(dg); setPlans(pl)
+      .then(([st, ob, dg, pl, rp]) => {
+        setStates(st); setObjectives(ob); setDiagnosis(dg); setPlans(pl); setReport(rp)
       })
       .catch((e) => setError(e.message))
   }, [studentId])
@@ -76,13 +78,14 @@ export default function Learning() {
     try {
       await action()
       setMsg(okMsg)
-      const [st, ob, dg, pl] = await Promise.all([
+      const [st, ob, dg, pl, rp] = await Promise.all([
         endpoints.knowledgeStates(studentId),
         endpoints.learningObjectives(studentId),
         endpoints.diagnosis(studentId),
         endpoints.learningPlans(studentId),
+        endpoints.learningReport(studentId, 7).catch(() => null),
       ])
-      setStates(st); setObjectives(ob); setDiagnosis(dg); setPlans(pl)
+      setStates(st); setObjectives(ob); setDiagnosis(dg); setPlans(pl); setReport(rp)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -227,6 +230,51 @@ export default function Learning() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </Card>
+
+          <Card title="本周学习报告（近 7 天）">
+            {!report ? <Empty>暂无数据</Empty> : (
+              <div className="grid grid-2">
+                <div>
+                  <div className="muted" style={{ fontSize: 12 }}>学习证据 / 正确率</div>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>
+                    {report.evidence_count} 条 {report.accuracy != null ? `· ${Math.round(report.accuracy * 100)}%` : ''}
+                  </div>
+                  <div className="muted mt-2" style={{ fontSize: 12 }}>任务完成率</div>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>
+                    {report.completion_rate != null ? `${Math.round(report.completion_rate * 100)}%` : '—'}
+                    <span className="muted" style={{ fontSize: 12, fontWeight: 400 }}>（批改 {report.graded_count} / 布置 {report.assigned_count}）</span>
+                  </div>
+                  {Object.keys(report.error_types || {}).length > 0 && (
+                    <div className="mt-2">
+                      <div className="muted" style={{ fontSize: 12 }}>主要错误：</div>
+                      {Object.entries(report.error_types).map(([k, v]) => (
+                        <span key={k} className="badge badge-warn" style={{ marginRight: 4 }}>
+                          {ERROR_LABELS[k] || k} ×{v}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="muted" style={{ fontSize: 12 }}>主要进步</div>
+                  {report.improving?.length === 0 && <div className="muted">—</div>}
+                  {report.improving?.map((c) => (
+                    <div key={c.knowledge_point}>{c.knowledge_point} <span className="badge badge-success">+{Math.round(c.delta * 100)}%</span></div>
+                  ))}
+                  <div className="muted mt-2" style={{ fontSize: 12 }}>仍在下滑</div>
+                  {report.declining?.length === 0 && <div className="muted">—</div>}
+                  {report.declining?.map((c) => (
+                    <div key={c.knowledge_point}>{c.knowledge_point} <span className="badge badge-warn">{Math.round(c.delta * 100)}%</span></div>
+                  ))}
+                  {report.priorities?.length > 0 && (
+                    <div className="muted mt-2" style={{ fontSize: 12 }}>
+                      下周建议关注：{report.priorities.map((p) => p.knowledge_point).join('、')}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </Card>

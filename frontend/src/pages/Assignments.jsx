@@ -66,7 +66,12 @@ export default function Assignments() {
                   <td>{badge(a.status)}</td>
                   <td>{a.due_date ? new Date(a.due_date).toLocaleString() : '—'}</td>
                   <td className="right">
-                    <Link className="btn" to={`/grading/${a.id}`} style={{ marginRight: 8 }}>批改</Link>
+                    {submissionsByAssignment[a.id]
+                      ? <Link className="btn" to={`/grading/${submissionsByAssignment[a.id].id}`} style={{ marginRight: 8 }}>批改</Link>
+                      : <span className="muted" style={{ marginRight: 8 }}>未提交</span>}
+                    <a className="btn-ghost" style={{ marginRight: 8 }}
+                       href={endpoints.paperPdfUrl(a.question_set_id, 'student')}
+                       target="_blank" rel="noreferrer">导出试卷</a>
                     {a.status === 'assigned' && <button className="btn btn-danger" onClick={() => cancel(a.id)}>取消</button>}
                   </td>
                 </tr>
@@ -89,7 +94,7 @@ function StudentView({ list, submissions }) {
       const sub = submissions[a.id]
       const row = { ...a, latest_submission: sub }
       if (a.status === 'cancelled') continue
-      if (sub && sub.status === 'graded') graded.push(row)
+      if ((sub && sub.status === 'graded') || a.status === 'graded') graded.push(row)
       else if (sub || a.status === 'submitted') submitted.push(row)
       else pending.push(row)
     }

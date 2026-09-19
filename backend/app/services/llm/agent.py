@@ -42,7 +42,7 @@ from app.services.llm.prompts import (
 from app.services.llm.provider import get_chat_model
 from app.services.llm.tools import ALL_TOOLS
 from app.services.rubric import validate_question
-from app.services.svg import build_diagram_prompt, diagram_from_json
+from app.services.svg import build_diagram_prompt, diagram_from_json, sanitize_diagram_payload
 
 
 logger = logging.getLogger(__name__)
@@ -405,8 +405,12 @@ def generate_two_sets(
         generated = stage_question_generation(
             db, plan=plan, student_payload=student_payload, existing_draft=None, user=user
         )
-        # Fill geometry diagrams where missing.
+        # Sanitize any untrusted LLM-provided diagram markup, then fill
+        # geometry diagrams where still missing.
         for q in generated.get("questions", []):
+            if q.get("diagram_svg"):
+                fmt2, payload2 = sanitize_diagram_payload(q.get("diagram_format"), q["diagram_svg"])
+                q["diagram_format"], q["diagram_svg"] = fmt2, payload2
             if q.get("subject") == "math" and q.get("needs_diagram") and not q.get("diagram_svg"):
                 fmt, payload = stage_diagram_generation(db, prompt=q.get("prompt", ""), user=user)
                 if fmt:

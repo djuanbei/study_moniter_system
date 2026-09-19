@@ -160,3 +160,26 @@ class Grading(Base, TimestampMixin):
 
     submission: Mapped[Submission] = relationship("Submission", back_populates="gradings")
     grader: Mapped[Optional["User"]] = relationship("User")
+
+
+class GradeVersion(Base):
+    """PRD §50 — score-change history: AI suggestion -> parent review -> official."""
+
+    __tablename__ = "grade_versions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    grading_id: Mapped[int] = mapped_column(
+        ForeignKey("gradings.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    submission_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("submissions.id", ondelete="SET NULL"), index=True
+    )
+    previous_score: Mapped[Optional[float]] = mapped_column(Float)
+    new_score: Mapped[float] = mapped_column(Float, nullable=False)
+    reason: Mapped[Optional[str]] = mapped_column(Text)
+    changed_by: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=False), nullable=False, index=True
+    )

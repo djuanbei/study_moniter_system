@@ -14,6 +14,7 @@ from app.models.assignments import Assignment, Grading, QuestionSet, Submission
 from app.models.auth import User
 from app.models.students import Student
 from app.schemas import GradingConfirmIn, GradingOut
+from app.services.learning import get_state
 # Note: stage_grading is imported lazily inside the route handler to allow the
 # app to boot even when langchain-core is not installed.
 
@@ -34,6 +35,11 @@ def list_gradings(
     db: Session = Depends(get_db),
 ) -> list[Grading]:
     q = db.query(Grading)
+    # RBAC: students may only see gradings of their own submissions.
+    if current.role == "student" and current.student_id:
+        q = q.join(Submission, Grading.submission_id == Submission.id).filter(
+            Submission.student_id == current.student_id
+        )
     if submission_id:
         q = q.filter(Grading.submission_id == submission_id)
     if confirmed_only:
@@ -103,15 +109,20 @@ def confirm(
         grading = Grading(submission_id=sub.id, grader_id=current.id)
         db.add(grading)
     grading.grader_id = current.id
+    previous_score = grading.final_score  # PRD §50: track score changes
     grading.final_score = payload.final_score
     grading.feedback = payload.feedback
     grading.per_question_scores = payload.per_question_scores or grading.per_question_scores
+
+    # Idempotent: repeat confirms must not append duplicate score history
+    # or re-create evidence.
+    was_confirmed = grading.confirmed
     grading.confirmed = True
-    grading.confirmed_at = datetime.utcnow()
+    grading.confirmed_at = grading.confirmed_at or datetime.utcnow()
 
     # Write back to student score_history
     student = db.get(Student, sub.student_id)
-    if student:
+    if student and not was_confirmed:
         history = list(student.score_history or [])
         history.append(
             {
@@ -123,10 +134,12 @@ def confirm(
         )
         student.score_history = history
 
-    # Mark assignment complete
+    # Mark assignment + submission graded (Submission.status drives the
+    # student's "已批改" bucket in the frontend).
     assignment = db.get(Assignment, sub.assignment_id)
     if assignment:
         assignment.status = "graded"
+    sub.status = "graded"
 
     # PRD §49, §56, §59: parent-confirmed grading becomes official learning
     # evidence and updates the student knowledge state (the core loop).
@@ -138,6 +151,59 @@ def confirm(
         )
     else:
         created = 0
+
+    # PRD §50: a parent-modified score after confirmation is versioned.
+    if was_confirmed and previous_score is not None and previous_score != payload.final_score:
+        from app.models.assignments import GradeVersion
+
+        db.add(
+            GradeVersion(
+                grading_id=grading.id,
+                submission_id=sub.id,
+                previous_score=previous_score,
+                new_score=payload.final_score,
+                reason=payload.reason,
+                changed_by=current.id,
+                changed_at=grading.confirmed_at,
+            )
+        )
+
+    # PRD §63: if this submission closes a learning-plan item, measure the
+    # intervention outcome (before vs after mastery).
+    if student and not was_confirmed:
+        from app.models.learning import InterventionOutcome, LearningPlanItem
+
+        item = (
+            db.query(LearningPlanItem)
+            .filter(LearningPlanItem.assignment_id == sub.assignment_id)
+            .first()
+        )
+        if item:
+            item.status = "done"
+            after_state = (
+                get_state(db, student.id, item.knowledge_point_id)
+                if item.knowledge_point_id
+                else None
+            )
+            after = after_state.mastery_score if after_state else None
+            delta = (
+                round(after - item.before_mastery, 4)
+                if after is not None and item.before_mastery is not None
+                else None
+            )
+            db.add(
+                InterventionOutcome(
+                    plan_item_id=item.id,
+                    student_id=student.id,
+                    knowledge_point_id=item.knowledge_point_id,
+                    intervention_type=item.intervention_type,
+                    before_mastery=item.before_mastery,
+                    after_mastery=after,
+                    delta=delta,
+                    assessment_count=created,
+                    created_at=grading.confirmed_at,
+                )
+            )
 
     record_audit(
         db,

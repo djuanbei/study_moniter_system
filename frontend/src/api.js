@@ -164,6 +164,10 @@ export const endpoints = {
   cancelPlan: (id) => api.post(`/learning-plans/${id}/cancel`),
   assignPlanItem: (planId, itemId) =>
     api.post(`/learning-plans/${planId}/items/${itemId}/assign`),
+  learningReport: (studentId, days = 7) =>
+    api.get(`/reports/learning/${studentId}?days=${days}`),
+  paperPdfUrl: (setId, variant = 'student') =>
+    `/api/exports/question-sets/${setId}/pdf?variant=${variant}`,
 
   exportCsv: (id) => api.get(`/archive/students/${id}/csv`),
   exportPdf: (id) => api.get(`/archive/students/${id}/pdf`),

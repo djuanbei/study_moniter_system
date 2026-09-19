@@ -93,6 +93,19 @@ def get_business_config() -> dict[str, Any]:
     return _load_business_config()
 
 
+def get_server_bind() -> tuple[str, int]:
+    """Resolve the (host, port) the web server should bind.
+
+    configure.json's `web` section takes precedence over .env / defaults:
+        {"web": {"host": "0.0.0.0", "port": 8000}}
+    """
+    web = get_business_config().get("web") or {}
+    s = get_settings()
+    host = str(web.get("host") or s.host)
+    port = int(web.get("port") or s.port)
+    return host, port
+
+
 def resolve_path(*parts: str) -> Path:
     """Resolve a path under the project root unless it is already absolute."""
     p = Path(*parts)

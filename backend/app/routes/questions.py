@@ -15,6 +15,7 @@ from app.models.assignments import Question, QuestionSet
 from app.models.auth import User
 from app.models.students import Student
 from app.schemas import GenerateIn, GenerateOut, QuestionSetOut
+from app.services.svg import sanitize_diagram_payload
 # generate_two_sets is imported lazily inside the route handler to allow the
 # app to boot even when langchain-core is not installed.
 
@@ -86,8 +87,9 @@ def generate(
         db.commit()
     except Exception as exc:  # noqa: BLE001
         logger.exception("Question generation failed")
-        db.rollback()
-        # Preserve draft semantics: store a failed LLMRun and re-raise
+        # Keep the failed LLMRun rows for traceability (they are flushed, not
+        # yet committed; generation stages write nothing else to the DB).
+        db.commit()
         raise HTTPException(status_code=502, detail=f"LLM generation failed: {exc}") from exc
 
     return GenerateOut(**result)
@@ -115,6 +117,7 @@ def persist_sets(
         db.add(qs)
         db.flush()
         for q in set_data.get("questions", []):
+            fmt, markup = sanitize_diagram_payload(q.get("diagram_format"), q.get("diagram_svg"))
             db.add(
                 Question(
                     question_set_id=qs.id,
@@ -127,8 +130,8 @@ def persist_sets(
                     knowledge_points=q.get("knowledge_points", []),
                     difficulty=q.get("difficulty", "medium"),
                     estimated_minutes=q.get("estimated_minutes"),
-                    diagram_svg=q.get("diagram_svg"),
-                    diagram_format=q.get("diagram_format"),
+                    diagram_svg=markup,
+                    diagram_format=fmt,
                 )
             )
         persisted.append(qs)

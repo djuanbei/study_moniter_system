@@ -58,6 +58,7 @@ def infer(
     textbook: str | None = None,
     grade: str | None = None,
     semester: int | None = None,
+    _: User = Depends(get_current_user),
 ):
     suggestion = infer_chapter(textbook=textbook, grade=grade, semester=semester)
     resolved_semester = suggestion.semester if suggestion else (semester if semester in (1, 2) else None)

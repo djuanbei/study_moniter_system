@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { endpoints } from '../api.js'
 import { Card, Empty } from '../components/ui.jsx'
+import Diagram from '../components/Diagram.jsx'
 
 export default function DoAssignment() {
   const { id } = useParams()
@@ -37,10 +38,16 @@ export default function DoAssignment() {
     setSubmitting(true); setError('')
     try {
       const form = new FormData()
-      form.append('text_answer', globalText || '')
+      // Backend reads ONE text_answer field — combine global + per-question
+      // answers here, otherwise extra fields are silently dropped.
+      const parts = []
+      if (globalText) parts.push(globalText)
+      for (const q of questions) {
+        if (answers[q.id]) parts.push(`Q${q.order}: ${answers[q.id]}`)
+      }
+      form.append('text_answer', parts.join('\n\n'))
       const allFiles = [...globalFiles]
       for (const q of questions) {
-        if (answers[q.id]) form.append('text_answer', answers[q.id])
         for (const f of (files[q.order] || [])) allFiles.push(f)
       }
       for (const f of allFiles) form.append('files', f)
@@ -69,9 +76,7 @@ export default function DoAssignment() {
               {q.estimated_minutes && <span className="muted">约 {q.estimated_minutes} 分钟</span>}
             </div>
             <div className="prompt mt-2">{q.prompt}</div>
-            {q.diagram_svg && (
-              <div className="diagram-preview mt-2" dangerouslySetInnerHTML={{ __html: q.diagram_svg }} />
-            )}
+            <Diagram format={q.diagram_format} svg={q.diagram_svg} />
             <div className="mt-2">
               {(q.knowledge_points || []).map(k => <span key={k} className="kp-chip">{k}</span>)}
             </div>

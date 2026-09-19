@@ -38,6 +38,8 @@ def create_user(
     _teacher_only(current)
     if db.query(User).filter(User.username == payload.username).first():
         raise HTTPException(status_code=400, detail="Username already exists")
+    if payload.student_id and db.query(User).filter(User.student_id == payload.student_id).first():
+        raise HTTPException(status_code=400, detail="该学生已绑定登录账号")
     user = User(
         username=payload.username,
         password_hash=hash_password(payload.password),

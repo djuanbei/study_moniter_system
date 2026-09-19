@@ -55,6 +55,7 @@ from app.services.learning import (
     record_evidence,
     sync_knowledge_points,
 )
+from app.services.svg import sanitize_diagram_payload
 
 logger = logging.getLogger(__name__)
 
@@ -498,6 +499,7 @@ def assign_plan_item(
     db.add(qs)
     db.flush()
     for q in set_data.get("questions", []):
+        fmt, markup = sanitize_diagram_payload(q.get("diagram_format"), q.get("diagram_svg"))
         db.add(
             Question(
                 question_set_id=qs.id,
@@ -510,8 +512,8 @@ def assign_plan_item(
                 knowledge_points=q.get("knowledge_points", [kp_name]),
                 difficulty=q.get("difficulty", difficulty),
                 estimated_minutes=q.get("estimated_minutes"),
-                diagram_svg=q.get("diagram_svg"),
-                diagram_format=q.get("diagram_format"),
+                diagram_svg=markup,
+                diagram_format=fmt,
             )
         )
     assignment = Assignment(
@@ -526,6 +528,7 @@ def assign_plan_item(
     db.flush()
     item.assignment_id = assignment.id
     item.status = "assigned"
+    item.before_mastery = state.mastery_score if state else 0.0  # PRD §63
     record_audit(db, action="assign_plan_item", user=current, request=request,
                  target_type="learning_plan_item", target_id=item.id,
                  detail={"assignment_id": assignment.id, "plan_id": plan.id})

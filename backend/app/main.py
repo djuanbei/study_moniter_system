@@ -34,6 +34,7 @@ from app.routes import (
     classes,
     dashboard,
     errors,
+    exports,
     grading,
     learning,
     questions,
@@ -62,6 +63,10 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
+app.add_middleware(CSRFMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+# CORS added last = outermost, so error responses (e.g. CSRF 403) still get
+# CORS headers in the dev cross-origin setup.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -73,8 +78,6 @@ app.add_middleware(
         "X-Request-ID",
     ],
 )
-app.add_middleware(CSRFMiddleware)
-app.add_middleware(RequestLoggingMiddleware)
 
 app.include_router(auth.router)
 app.include_router(accounts.router)
@@ -86,6 +89,7 @@ app.include_router(questions.router)
 app.include_router(submissions.router)
 app.include_router(grading.router)
 app.include_router(learning.router)
+app.include_router(exports.router)
 app.include_router(archive.router)
 app.include_router(settings_router.router)
 app.include_router(dashboard.router)
@@ -148,7 +152,16 @@ if FRONTEND_DIST.exists():
     def spa_fallback(full_path: str) -> FileResponse:
         if full_path.startswith("api/"):
             return JSONResponse(status_code=404, content={"detail": "Not found"})
-        target = FRONTEND_DIST / full_path
+        candidate = Path(full_path)
+        # Path traversal guard: reject absolute paths ("//etc/passwd") and
+        # dot segments; enforce containment after resolving symlinks/.. .
+        if candidate.is_absolute() or ".." in candidate.parts:
+            return FileResponse(FRONTEND_DIST / "index.html")
+        try:
+            target = (FRONTEND_DIST / candidate).resolve()
+            target.relative_to(FRONTEND_DIST.resolve())
+        except (ValueError, OSError):
+            return FileResponse(FRONTEND_DIST / "index.html")
         if target.is_file():
             return FileResponse(target)
         return FileResponse(FRONTEND_DIST / "index.html")
@@ -166,9 +179,12 @@ else:
 if __name__ == "__main__":
     import uvicorn
 
+    from app.config import get_server_bind
+
+    host, port = get_server_bind()
     uvicorn.run(
         "app.main:app",
-        host=settings.host,
-        port=settings.port,
+        host=host,
+        port=port,
         reload=False,
     )

@@ -139,6 +139,8 @@ async def upload_submission(
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
     ensure_can_access_student(current, assignment.student_id)
+    if assignment.status == "graded":
+        raise HTTPException(status_code=400, detail="该作业已批改，不能重新提交")
 
     mime = (file.content_type or "").lower()
     ext = ALLOWED_MIMES.get(mime)

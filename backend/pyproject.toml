@@ -16,6 +16,7 @@ dependencies = [
     "itsdangerous>=2.2.0",
     "pillow>=10.4.0",
     "pytesseract>=0.3.13",
+    "pdf2image>=1.17.0",
     "reportlab>=4.2.0",
     "langchain>=0.3.0",
     "langchain-core>=0.3.0",

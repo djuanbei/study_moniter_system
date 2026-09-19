@@ -268,5 +268,31 @@ class LearningPlanItem(Base, TimestampMixin):
     assignment_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("assignments.id", ondelete="SET NULL")
     )
+    before_mastery: Mapped[Optional[float]] = mapped_column(Float)  # mastery when assigned
 
     plan: Mapped[LearningPlan] = relationship("LearningPlan", back_populates="items")
+
+
+class InterventionOutcome(Base):
+    """PRD §63 — measured effect of an intervention on mastery."""
+
+    __tablename__ = "intervention_outcomes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    plan_item_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("learning_plan_items.id", ondelete="SET NULL"), index=True
+    )
+    student_id: Mapped[int] = mapped_column(
+        ForeignKey("students.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    knowledge_point_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("knowledge_points.id", ondelete="SET NULL")
+    )
+    intervention_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    before_mastery: Mapped[Optional[float]] = mapped_column(Float)
+    after_mastery: Mapped[Optional[float]] = mapped_column(Float)
+    delta: Mapped[Optional[float]] = mapped_column(Float)
+    assessment_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=False), nullable=False, index=True
+    )

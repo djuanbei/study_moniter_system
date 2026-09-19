@@ -166,6 +166,80 @@ def render_mermaid(spec: dict[str, Any]) -> str:
     return "\n".join(code_lines)
 
 
+# --- Sanitization of raw LLM-provided diagram markup ----------------------------
+
+_SVG_ALLOWED_TAGS = {
+    "svg", "g", "defs", "rect", "circle", "ellipse", "line", "polyline",
+    "polygon", "path", "text", "tspan", "title", "desc",
+}
+_SVG_ALLOWED_ATTRS = {
+    "xmlns", "viewBox", "width", "height", "x", "y", "x1", "y1", "x2", "y2",
+    "cx", "cy", "r", "rx", "ry", "points", "d", "fill", "stroke",
+    "stroke-width", "stroke-linecap", "stroke-linejoin", "stroke-dasharray",
+    "font-size", "font-family", "font-weight", "text-anchor", "transform",
+    "opacity", "fill-opacity", "stroke-opacity", "dx", "dy",
+}
+_DANGEROUS_VALUE = re.compile(r"(javascript:|data:|url\s*\()", re.IGNORECASE)
+
+
+def sanitize_svg_markup(markup: str) -> str | None:
+    """Sanitize a raw SVG document from the LLM to a safe subset.
+
+    Keeps only whitelisted tags/attributes (no script, foreignObject, event
+    handlers, external references). Returns None if parsing fails or the
+    root element is not <svg>.
+    """
+    import xml.etree.ElementTree as ET
+
+    try:
+        root = ET.fromstring(markup)
+    except ET.ParseError:
+        return None
+
+    # Keep the default SVG namespace (otherwise tostring emits `ns0:svg`,
+    # which browsers do not recognise as an SVG root element).
+    ET.register_namespace("", "http://www.w3.org/2000/svg")
+
+    def _local(tag: str) -> str:
+        return tag.rsplit("}", 1)[-1].lower()
+
+    def _clean(el):  # noqa: ANN001
+        if _local(el.tag) not in _SVG_ALLOWED_TAGS:
+            return None
+        for name in list(el.attrib):
+            local = _local(name)
+            if local not in _SVG_ALLOWED_ATTRS or _DANGEROUS_VALUE.search(str(el.attrib[name])):
+                del el.attrib[name]
+        kept = []
+        for child in list(el):
+            cleaned = _clean(child)
+            if cleaned is not None:
+                kept.append(cleaned)
+        el[:] = kept
+        return el
+
+    if _clean(root) is None or _local(root.tag) != "svg":
+        return None
+    return ET.tostring(root, encoding="unicode")
+
+
+def sanitize_diagram_payload(fmt: Any, markup: Any) -> tuple[str | None, str | None]:
+    """Validate an LLM-provided (format, markup) diagram pair.
+
+    SVG is passed through sanitize_svg_markup; mermaid is kept as plain text.
+    Returns (None, None) when the payload is unusable.
+    """
+    if not markup or not isinstance(markup, str):
+        return None, None
+    fmt = str(fmt or "svg").lower()
+    if fmt == "mermaid":
+        return "mermaid", markup[:5000]
+    if fmt == "svg":
+        clean = sanitize_svg_markup(markup)
+        return ("svg", clean) if clean else (None, None)
+    return None, None
+
+
 # --- LLM spec → diagram ------------------------------------------------------
 
 def build_diagram_prompt(question_prompt: str) -> str:

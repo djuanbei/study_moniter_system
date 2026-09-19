@@ -18,7 +18,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/study-moniter-system/data /opt/study-moniter-system/uploads /opt/study-moniter-system/logs
+ReadWritePaths=/opt/study-moniter-system/data /opt/study-moniter-system/uploads /opt/study-moniter-system/logs /opt/study-moniter-system/configure.json
 
 StandardOutput=append:/opt/study-moniter-system/logs/app.log
 StandardError=append:/opt/study-moniter-system/logs/app.log
