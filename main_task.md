@@ -15,7 +15,7 @@ A web-based learning companion system that helps teachers generate assignments, 
 
 ### Default Account
 - Username: `yun`
-- Password: `123456`
+- Password: configured via `PASS_WORD` in `.env` (no default value committed).
 - The default teacher must change the password on first login.
 
 ---
@@ -197,6 +197,7 @@ Supports per-student:
 - Installs required libraries when missing.
 - Creates directories and a virtual environment, installs dependencies, builds the frontend, runs migrations, and creates the default teacher if missing.
 - Does **not** overwrite existing `.env` or `configure.json`.
+- If `PASS_WORD` is missing from `.env`, prompts the operator interactively and writes it to `.env` before creating the default teacher.
 
 ### Supported Operating Systems
 - Ubuntu, Debian, CentOS, macOS.
@@ -237,7 +238,7 @@ Records: login, question generation, grading, export, deletion, account changes.
 
 1. A fresh machine can install and start with `./install.sh`.
 2. Repeated `./install.sh` does not destroy existing data.
-3. Default teacher `yun / 123456` can log in and is forced to change password.
+3. Default teacher `yun` can log in using the `PASS_WORD` from `.env` and is forced to change password.
 4. Teacher can create students with grade, textbook, and chapter.
 5. System can infer chapter from current time and configuration.
 6. Teacher can generate A/B question sets with configured count, difficulty, and knowledge points.
