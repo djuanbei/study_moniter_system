@@ -16,6 +16,7 @@ import History from './pages/History.jsx'
 import Exams from './pages/Exams.jsx'
 import ExamDo from './pages/ExamDo.jsx'
 import ExamGrading from './pages/ExamGrading.jsx'
+import QuestionBank from './pages/QuestionBank.jsx'
 import Archive from './pages/Archive.jsx'
 import Accounts from './pages/Accounts.jsx'
 import SettingsPage from './pages/Settings.jsx'
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/exams" element={<Exams />} />
         <Route path="/exams/:attemptId/do" element={<Protected><ExamDo /></Protected>} />
         <Route path="/exams/grading/:attemptId" element={<Protected teacherOnly><ExamGrading /></Protected>} />
+        <Route path="/question-bank" element={<Protected teacherOnly><QuestionBank /></Protected>} />
         <Route path="/assignments" element={<Assignments />} />
         <Route path="/assignments/:id/do" element={<DoAssignment />} />
         <Route path="/result/:id" element={<ViewResult />} />

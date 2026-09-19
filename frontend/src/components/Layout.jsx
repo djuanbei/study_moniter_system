@@ -9,6 +9,7 @@ const NAV = [
   { to: '/materials', label: '教材资料', icon: '📚', teacher: true },
   { to: '/history', label: '历史试卷', icon: '🗂️', teacher: true },
   { to: '/wizard', label: '出题向导', icon: '✨', teacher: true },
+  { to: '/question-bank', label: '题库', icon: '🏦', teacher: true },
   { to: '/grading', label: '批改', icon: '✅', teacher: true },
   { to: '/students', label: '学生管理', icon: '🧒', teacher: true },
   { to: '/classes', label: '班级管理', icon: '🏫', teacher: true },

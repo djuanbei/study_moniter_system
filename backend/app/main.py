@@ -50,6 +50,7 @@ from app.routes import (
     learning,
     materials,
     questions,
+    question_bank,
     settings as settings_router,
     students,
     submissions,
@@ -123,6 +124,7 @@ app.include_router(materials.router)
 app.include_router(historical.router)
 app.include_router(jobs.router)
 app.include_router(exams.router)
+app.include_router(question_bank.router)
 app.include_router(archive.router)
 app.include_router(settings_router.router)
 app.include_router(dashboard.router)

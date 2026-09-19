@@ -33,6 +33,7 @@ from app.models.learning import (
 from app.models.materials import Material
 from app.models.historical import HistoricalAssessment, HistoricalQuestion
 from app.models.exams import Exam, ExamAttempt
+from app.models.question_bank import QuestionBankItem, QuestionVersion
 from app.models.students import Chapter, Class, Student, StudentProgress
 from app.models.system import Job, LLMRun, Setting
 
@@ -67,7 +68,7 @@ ALL_MODELS = [
 
 def register_all() -> None:
     """Import all model modules so their tables register with the metadata."""
-    from app.models import assignments, auth, exams, historical, learning, materials, students, system  # noqa: F401
+    from app.models import assignments, auth, exams, historical, learning, materials, question_bank, students, system  # noqa: F401
 
 
 __all__ = [
@@ -100,6 +101,8 @@ __all__ = [
     "HistoricalQuestion",
     "Exam",
     "ExamAttempt",
+    "QuestionBankItem",
+    "QuestionVersion",
     "LLMRun",
     "Job",
     "AuditLog",

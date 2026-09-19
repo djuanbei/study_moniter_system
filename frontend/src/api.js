@@ -196,6 +196,23 @@ export const endpoints = {
   submitExam: (id, reason = 'manual') => api.post(`/exam-attempts/${id}/submit`, { reason }),
   confirmExam: (id, data) => api.post(`/exam-attempts/${id}/confirm`, data),
 
+  bankList: (filters = {}) => {
+    const qs = new URLSearchParams()
+    if (filters.knowledge_point) qs.set('knowledge_point', filters.knowledge_point)
+    if (filters.subject) qs.set('subject', filters.subject)
+    if (filters.difficulty) qs.set('difficulty', filters.difficulty)
+    if (filters.q) qs.set('q', filters.q)
+    return api.get('/question-bank' + (qs.toString() ? `?${qs}` : ''))
+  },
+  bankPublish: (data) => api.post('/question-bank', data),
+  bankItem: (id) => api.get(`/question-bank/${id}`),
+  bankVersions: (id) => api.get(`/question-bank/${id}/versions`),
+  bankUpdate: (id, data) => api.patch(`/question-bank/${id}`, data),
+  bankDeprecate: (id) => api.post(`/question-bank/${id}/deprecate`),
+  bankSimilar: (id) => api.get(`/question-bank/${id}/similar`),
+  bankFromSet: (data) => api.post('/question-bank/from-set', data),
+  bankToAssignment: (data) => api.post('/question-bank/to-assignment', data),
+
   exportCsv: (id) => api.get(`/archive/students/${id}/csv`),
   exportPdf: (id) => api.get(`/archive/students/${id}/pdf`),
   exportImagesZip: (id) => api.get(`/archive/students/${id}/images.zip`),
