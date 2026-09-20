@@ -88,6 +88,8 @@ def test_approve_fetches_into_material_library(db_session, sample_setup, fake_pr
         content = b"<html><body><h1>test</h1><p>content body</p></body></html>"
         text = "<html><body><h1>test</h1><p>content body</p></body></html>"
         headers = {"content-type": "text/html; charset=utf-8"}
+        is_redirect = False
+        next_request = None
 
         def raise_for_status(self):
             pass
@@ -114,6 +116,8 @@ def test_double_approve_rejected(db_session, sample_setup, fake_provider, monkey
         content = b"x"
         text = "x"
         headers = {"content-type": "text/plain"}
+        is_redirect = False
+        next_request = None
 
         def raise_for_status(self):
             pass
@@ -130,6 +134,45 @@ def test_material_discovery_job_registered():
     from app.services.job_worker import registered_types
 
     assert "MATERIAL_DISCOVERY" in registered_types()
+
+
+def test_redirect_to_private_host_is_not_followed(db_session, sample_setup, monkeypatch):
+    """Regression: a public page 302-ing to loopback must not be fetched (SSRF)."""
+    cand = MaterialCandidate(
+        title="redirector", url="https://8.8.8.8/redirect-me", domain="8.8.8.8",
+        license="unknown", content_hash="a" * 64,
+        retrieved_at=datetime.utcnow(), status="discovered",
+    )
+    db_session.add(cand)
+    db_session.commit()
+
+    class FakeReq:
+        url = "http://169.254.169.254/latest/meta-data/"
+
+    class FakeResp:
+        content = b""
+        text = ""
+        headers = {"content-type": "text/html"}
+        is_redirect = True
+        next_request = FakeReq()
+
+        def raise_for_status(self):
+            pass
+
+    import app.services.material_agent as agent
+
+    fetched = []
+    def fake_get(url, **kwargs):
+        fetched.append(url)
+        assert kwargs.get("follow_redirects") is False
+        return FakeResp()
+
+    monkeypatch.setattr(agent.httpx, "get", fake_get)
+    with pytest.raises(ValueError, match="非公开"):
+        approve_candidate(db_session, cand)
+    # only the first (public) hop was fetched; the private redirect was not
+    assert fetched == ["https://8.8.8.8/redirect-me"]
+    assert cand.status == "discovered"
 
 
 def test_auto_import_stays_false():
@@ -185,6 +228,8 @@ def test_extensionless_nonhtml_uses_content_type(db_session, sample_setup,
         content = b"%PDF-1.4 fake"
         text = ""
         headers = {"content-type": "application/pdf"}
+        is_redirect = False
+        next_request = None
 
         def raise_for_status(self):
             pass

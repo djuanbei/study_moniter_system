@@ -183,6 +183,7 @@ def discover_materials(db: Session, *, user=None) -> dict:
     queries = build_queries(db)
     created = 0
     duplicates = 0
+    skipped = 0  # rejected by the SSRF guard (distinct from duplicates)
     scanned = 0
     now = datetime.utcnow()
     seen_hashes: set[str] = set()
@@ -217,7 +218,7 @@ def discover_materials(db: Session, *, user=None) -> dict:
                 duplicates += 1
                 continue
             if not _validate_public_url(disc.url, resolve_hostnames=False):
-                duplicates += 1  # non-public hosts are skipped entirely
+                skipped += 1  # non-public hosts are skipped entirely
                 continue
             db.add(
                 MaterialCandidate(
@@ -239,7 +240,8 @@ def discover_materials(db: Session, *, user=None) -> dict:
             created += 1
     db.flush()
     # §87: auto_import is false — candidates wait for parent approval.
-    return {"candidates": created, "duplicates": duplicates, "queries": len(queries)}
+    return {"candidates": created, "duplicates": duplicates, "skipped": skipped,
+            "queries": len(queries)}
 
 
 def _strip_html(html: str) -> str:
@@ -261,8 +263,23 @@ def approve_candidate(db: Session, candidate: MaterialCandidate, user=None) -> M
     if not _validate_public_url(candidate.url):
         # full validation incl. DNS resolution (SSRF guard)
         raise ValueError("URL 指向非公开或不可解析地址，已拒绝抓取")
-    resp = httpx.get(candidate.url, timeout=20, follow_redirects=True,
-                     headers={"User-Agent": "LearningCompanion/0.1"})
+
+    # Fetch with redirects disabled and validate every hop — otherwise a
+    # public page could 302 the fetcher into loopback/link-local (SSRF).
+    url = candidate.url
+    resp = None
+    max_hops = 5
+    for _ in range(max_hops):
+        if not _validate_public_url(url):
+            raise ValueError("重定向指向非公开地址，已拒绝抓取")
+        resp = httpx.get(url, timeout=20, follow_redirects=False,
+                         headers={"User-Agent": "LearningCompanion/0.1"})
+        if resp.is_redirect and resp.next_request is not None:
+            url = str(resp.next_request.url)
+            continue
+        break
+    else:
+        raise ValueError("重定向次数过多，已拒绝抓取")
     resp.raise_for_status()
     content_type = resp.headers.get("content-type", "text/html").split(";")[0].strip().lower()
     if content_type in ("text/html", "text/plain") or content_type.startswith("text/"):
