@@ -86,6 +86,9 @@ class Question(Base, TimestampMixin):
     estimated_minutes: Mapped[Optional[int]] = mapped_column(Integer)
     diagram_svg: Mapped[Optional[str]] = mapped_column(Text)  # SVG markup or Mermaid source
     diagram_format: Mapped[Optional[str]] = mapped_column(String(16))  # svg | mermaid
+    rationale: Mapped[Optional[str]] = mapped_column(Text)  # PRD §37 — why this question
+    error_type_hint: Mapped[Optional[str]] = mapped_column(String(48))  # error type to drill
+    source_evidence_ids: Mapped[list[int]] = mapped_column(JSON, default=list)
 
     question_set: Mapped[QuestionSet] = relationship("QuestionSet", back_populates="questions")
 

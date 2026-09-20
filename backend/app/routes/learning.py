@@ -17,8 +17,10 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -27,6 +29,7 @@ from app.middleware.audit import record_audit
 from app.models.assignments import Assignment, Question, QuestionSet
 from app.models.auth import User
 from app.models.learning import (
+    INTERVENTION_TYPES,
     KnowledgePoint,
     LearningEvidence,
     LearningObjective,
@@ -558,6 +561,8 @@ def assign_plan_item(
                 estimated_minutes=q.get("estimated_minutes"),
                 diagram_svg=markup,
                 diagram_format=fmt,
+                rationale=q.get("rationale"),
+                error_type_hint=q.get("error_type_hint"),
             )
         )
     assignment = Assignment(
@@ -579,3 +584,100 @@ def assign_plan_item(
     db.commit()
     db.refresh(assignment)
     return assignment
+
+
+# ---------------------------------------------------------------------------
+# Plan item edit endpoints (PRD §31 — Accept / Modify / Skip / Adjust)
+# ---------------------------------------------------------------------------
+
+class PlanItemPatchIn(BaseModel):  # type: ignore[misc]
+    description: Optional[str] = None
+    question_count: Optional[int] = None
+    estimated_minutes: Optional[int] = None
+    intervention_type: Optional[str] = None
+    day: Optional[int] = None
+    rationale: Optional[str] = None
+
+
+@router.patch("/learning-plans/{plan_id}/items/{item_id}", response_model=LearningPlanOut)
+def modify_plan_item(
+    plan_id: int,
+    item_id: int,
+    payload: PlanItemPatchIn,
+    request: Request,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> LearningPlan:
+    _teacher_only(current)
+    item = db.get(LearningPlanItem, item_id)
+    if not item or item.plan_id != plan_id:
+        raise HTTPException(status_code=404, detail="Plan item not found")
+    if item.status == "done":
+        raise HTTPException(status_code=400, detail="已完成的任务不能修改")
+    for key, value in payload.model_dump(exclude_none=True).items():
+        if key == "intervention_type" and value not in INTERVENTION_TYPES:
+            raise HTTPException(status_code=400, detail=f"未知干预类型: {value}")
+        setattr(item, key, value)
+    record_audit(
+        db,
+        action="modify_plan_item",
+        user=current,
+        request=request,
+        target_type="learning_plan_item",
+        target_id=item.id,
+        detail={"plan_id": plan_id, "fields": list(payload.model_dump(exclude_none=True).keys())},
+    )
+    db.commit()
+    plan = db.get(LearningPlan, plan_id)
+    return plan
+
+
+@router.post("/learning-plans/{plan_id}/items/{item_id}/skip", response_model=LearningPlanOut)
+def skip_plan_item(
+    plan_id: int,
+    item_id: int,
+    request: Request,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> LearningPlan:
+    _teacher_only(current)
+    item = db.get(LearningPlanItem, item_id)
+    if not item or item.plan_id != plan_id:
+        raise HTTPException(status_code=404, detail="Plan item not found")
+    item.status = "skipped"
+    record_audit(
+        db, action="skip_plan_item", user=current, request=request,
+        target_type="learning_plan_item", target_id=item.id,
+    )
+    db.commit()
+    return db.get(LearningPlan, plan_id)
+
+
+@router.post("/learning-plans/{plan_id}/items/{item_id}/adjust", response_model=LearningPlanOut)
+def adjust_plan_item(
+    plan_id: int,
+    item_id: int,
+    payload: PlanItemPatchIn,
+    request: Request,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> LearningPlan:
+    """PRD §31 — parent adjust a day/intervention before assigning.
+
+    Equivalent to modify but explicitly recorded as 'adjust' in the audit log.
+    """
+    _teacher_only(current)
+    item = db.get(LearningPlanItem, item_id)
+    if not item or item.plan_id != plan_id:
+        raise HTTPException(status_code=404, detail="Plan item not found")
+    for key, value in payload.model_dump(exclude_none=True).items():
+        if key == "intervention_type" and value not in INTERVENTION_TYPES:
+            raise HTTPException(status_code=400, detail=f"未知干预类型: {value}")
+        setattr(item, key, value)
+    record_audit(
+        db, action="adjust_plan_item", user=current, request=request,
+        target_type="learning_plan_item", target_id=item.id,
+        detail=payload.model_dump(exclude_none=True),
+    )
+    db.commit()
+    return db.get(LearningPlan, plan_id)

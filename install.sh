@@ -186,8 +186,18 @@ PY
     chmod 600 "$PROJECT_ROOT/.env"
     echo "PASS_WORD set in .env"
   else
-    warn "Non-interactive shell: cannot prompt for PASS_WORD. Please edit .env manually."
+    warn "Non-interactive shell: cannot prompt for PASS_WORD."
+    warn "Edit $PROJECT_ROOT/.env and set PASS_WORD=<at-least-8-chars> before starting the backend."
+    warn "Aborting install because the backend cannot bootstrap without PASS_WORD."
+    exit 1
   fi
+fi
+
+# Re-check after the prompt: we must not continue without a usable PASS_WORD.
+# bash 3.2 (macOS default) does not support ${#$(...)}; capture the value first.
+pw_value="$(pass_word_value)"
+if [ -z "$pw_value" ] || [ "${#pw_value}" -lt 8 ]; then
+  die "PASS_WORD is missing or too short in .env. Set PASS_WORD=<min 8 chars> and re-run install."
 fi
 
 # --- configure.json ---------------------------------------------------------
@@ -257,8 +267,27 @@ echo "Frontend built to $FRONTEND_DIR/dist"
 
 step "Creating runtime directories"
 mkdir -p "$PROJECT_ROOT/data" "$PROJECT_ROOT/uploads" "$PROJECT_ROOT/logs"
+# Family-learning system stores sensitive student data; lock down data/.
+chmod 700 "$PROJECT_ROOT/data" 2>/dev/null || warn "Could not chmod 700 data/"
 
 # --- Summary -----------------------------------------------------------------
+
+# Resolve the host/port from configure.json so the hint matches the actual
+# deployment configuration (PRD §87 — configure.json:web is authoritative).
+CFG_HOST="0.0.0.0"
+CFG_PORT="8000"
+if command -v python3 >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/configure.json" ]; then
+  eval "$(python3 -c "
+import json, os
+try:
+    cfg = json.load(open(os.environ.get('CFG_PATH', '')))
+except Exception:
+    cfg = {}
+web = cfg.get('web') or {}
+print(f\"CFG_HOST={web.get('host', '0.0.0.0')}\")
+print(f\"CFG_PORT={web.get('port', 8000)}\")
+" CFG_PATH="$PROJECT_ROOT/configure.json" 2>/dev/null)" || true
+fi
 
 step "Installation complete"
 cat <<EOF
@@ -266,8 +295,8 @@ cat <<EOF
 Next steps:
   1. Edit .env if you need to set LLM API keys (OPENAI_API_KEY or ANTHROPIC_API_KEY).
   2. Start the backend:
-       cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
-  3. Open http://localhost:8000 in your browser.
+       cd backend && uv run uvicorn app.main:app --host $CFG_HOST --port $CFG_PORT
+  3. Open http://localhost:$CFG_PORT in your browser.
      - Dev frontend with hot-reload:  cd frontend && npm run dev
   4. Log in with the default teacher account (username: yun, password from PASS_WORD in .env).
      You will be asked to change the password on first login.

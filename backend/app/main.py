@@ -44,6 +44,7 @@ from app.routes import (
     errors,
     exams,
     exports,
+    extra_endpoints,
     grading,
     historical,
     jobs,
@@ -133,6 +134,12 @@ app.include_router(archive.router)
 app.include_router(settings_router.router)
 app.include_router(dashboard.router)
 app.include_router(errors.router)
+app.include_router(extra_endpoints.textbooks_router)
+app.include_router(extra_endpoints.sessions_router)
+app.include_router(extra_endpoints.question_generation_router)
+app.include_router(extra_endpoints.similar_router)
+app.include_router(extra_endpoints.progress_router)
+app.include_router(extra_endpoints.audit_router)
 
 
 @app.get("/api/health")

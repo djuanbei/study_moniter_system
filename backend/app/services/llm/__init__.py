@@ -5,6 +5,7 @@ from app.services.llm.agent import (
     stage_archive_summary,
     stage_bank_question,
     stage_curriculum_planning,
+    stage_diagnosis,
     stage_diagram_generation,
     stage_grading,
     stage_history_analysis,
@@ -32,4 +33,5 @@ __all__ = [
     "stage_material_analysis",
     "stage_history_analysis",
     "stage_bank_question",
+    "stage_diagnosis",
 ]

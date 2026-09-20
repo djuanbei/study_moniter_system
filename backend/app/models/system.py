@@ -13,6 +13,12 @@ from app.models._base import TimestampMixin
 
 
 class LLMRun(Base):
+    """PRD §72 — every LLM call is recorded for full traceability.
+
+    Includes prompt_hash, input/output JSON, model + version, token usage,
+    latency, job linkage, user, and the request timestamp.
+    """
+
     __tablename__ = "llm_runs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -22,11 +28,15 @@ class LLMRun(Base):
     input_json: Mapped[dict] = mapped_column(JSON, nullable=False)
     output_json: Mapped[Optional[dict]] = mapped_column(JSON)
     model: Mapped[Optional[str]] = mapped_column(String(64))
+    model_version: Mapped[Optional[str]] = mapped_column(String(64), index=True)
     tokens_in: Mapped[Optional[int]] = mapped_column(Integer)
     tokens_out: Mapped[Optional[int]] = mapped_column(Integer)
     duration_ms: Mapped[Optional[int]] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(16), default="ok", nullable=False, index=True)
     error: Mapped[Optional[str]] = mapped_column(Text)
+    job_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("jobs.id", ondelete="SET NULL"), index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False), nullable=False, server_default=func.now(), index=True
     )

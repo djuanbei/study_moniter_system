@@ -87,6 +87,7 @@ export const endpoints = {
 
   dashboard: () => api.get('/dashboard'),
   studentDashboard: () => api.get('/dashboard/student'),
+  parentDashboard: (studentId) => api.get(`/dashboard/parent/${studentId}`),
 
   students: (classId) => api.get('/students' + (classId ? `?class_id=${classId}` : '')),
   student: (id) => api.get(`/students/${id}`),
@@ -164,6 +165,36 @@ export const endpoints = {
   cancelPlan: (id) => api.post(`/learning-plans/${id}/cancel`),
   assignPlanItem: (planId, itemId) =>
     api.post(`/learning-plans/${planId}/items/${itemId}/assign`),
+  modifyPlanItem: (planId, itemId, data) =>
+    api.patch(`/learning-plans/${planId}/items/${itemId}`, data),
+  skipPlanItem: (planId, itemId) =>
+    api.post(`/learning-plans/${planId}/items/${itemId}/skip`),
+  adjustPlanItem: (planId, itemId, data) =>
+    api.post(`/learning-plans/${planId}/items/${itemId}/adjust`, data),
+
+  // PRD §84 — new top-level endpoints
+  textbooks: () => api.get('/textbooks'),
+  createTextbook: (data) => api.post('/textbooks', data),
+  createTextbookVersion: (data) => api.post('/textbooks/versions', data),
+  learningSessions: (studentId) =>
+    api.get(`/learning-sessions?student_id=${studentId}`),
+  createLearningSession: (data) => api.post('/learning-sessions', data),
+  endLearningSession: (id) => api.post(`/learning-sessions/${id}/end`),
+  enqueueQuestionGeneration: (payload) =>
+    api.post('/question-generation/enqueue', payload),
+  similarQuestions: (id, topK = 5, sameKpOnly = false) =>
+    api.get(`/similar-questions/${id}?top_k=${topK}&same_kp_only=${sameKpOnly}`),
+  studentProgress: (studentId) =>
+    api.get(`/student-progress?student_id=${studentId}`),
+  progressHistory: (progressId) =>
+    api.get(`/student-progress/${progressId}/history`),
+  auditLogs: (filters = {}) => {
+    const qs = new URLSearchParams()
+    if (filters.action) qs.set('action', filters.action)
+    if (filters.user_id) qs.set('user_id', String(filters.user_id))
+    if (filters.target_type) qs.set('target_type', filters.target_type)
+    return api.get('/audit' + (qs.toString() ? `?${qs}` : ''))
+  },
   learningReport: (studentId, days = 7) =>
     api.get(`/reports/learning/${studentId}?days=${days}`),
   paperPdfUrl: (setId, variant = 'student') =>

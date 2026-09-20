@@ -60,6 +60,7 @@ class Student(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     grade: Mapped[Optional[str]] = mapped_column(String(32), index=True)
+    school: Mapped[Optional[str]] = mapped_column(String(128), index=True)
     class_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("classes.id", ondelete="SET NULL")
     )

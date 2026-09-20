@@ -32,6 +32,7 @@ from app.models.system import LLMRun
 from app.services.llm.prompts import (
     ARCHIVE_SUMMARY,
     CURRICULUM_PLANNER,
+    DIAGNOSIS_AGENT,
     DIAGRAM_GENERATOR,
     GRADING,
     HISTORY_ANALYZER,
@@ -77,19 +78,25 @@ def _record_run(
     duration_ms: Optional[int] = None,
     status: str = "ok",
     error: Optional[str] = None,
+    job_id: Optional[int] = None,
+    model: Optional[str] = None,
+    model_version: Optional[str] = None,
 ) -> LLMRun:
+    llm_cfg = get_business_config().get("llm", {})
     run = LLMRun(
         agent=agent,
         purpose=purpose,
         prompt_hash=_hash_prompt(prompt),
         input_json={"prompt": prompt},
         output_json=output,
-        model=get_business_config().get("llm", {}).get("model"),
+        model=model or llm_cfg.get("model"),
+        model_version=model_version or llm_cfg.get("model_version"),
         tokens_in=tokens_in,
         tokens_out=tokens_out,
         duration_ms=duration_ms,
         status=status,
         error=error,
+        job_id=job_id,
         created_at=datetime.utcnow(),
         user_id=user_id,
     )
@@ -612,3 +619,68 @@ def stage_bank_question(
             error=str(exc),
         )
         return None
+
+
+# ---------------------------------------------------------------------------
+# Stage 12: Diagnosis Agent (PRD §29 + §70)
+# ---------------------------------------------------------------------------
+
+def stage_diagnosis(
+    db: Session,
+    *,
+    priorities: list[dict],
+    student_context: dict,
+    user: Optional[User],
+) -> dict:
+    """LLM-augmented diagnosis on top of the deterministic priority list.
+
+    Returns a dict with ``summary`` and ``priorities`` (each with
+    ``reasoning``, ``error_patterns``, ``next_steps``). On LLM failure the
+    deterministic priorities are passed through unchanged so the caller can
+    always proceed.
+    """
+    prompt = DIAGNOSIS_AGENT.format(
+        priorities=json.dumps(priorities, ensure_ascii=False),
+        student_context=json.dumps(student_context, ensure_ascii=False),
+    )
+    llm = get_chat_model(purpose="diagnosis")
+    started = time.time()
+    try:
+        msg = llm.invoke(
+            [
+                SystemMessage(content="You are a deterministic assistant. Return ONLY JSON."),
+                HumanMessage(content=prompt),
+            ]
+        )
+        duration = int((time.time() - started) * 1000)
+        parsed = _safe_json_loads(msg.content)
+        out = parsed if isinstance(parsed, dict) else {"value": parsed}
+        _record_run(
+            db,
+            agent="diagnosis",
+            purpose="diagnosis",
+            prompt=prompt,
+            output=out,
+            user_id=user.id if user else None,
+            duration_ms=duration,
+        )
+        if isinstance(out.get("priorities"), list):
+            return out
+    except Exception as exc:  # noqa: BLE001
+        duration = int((time.time() - started) * 1000)
+        _record_run(
+            db,
+            agent="diagnosis",
+            purpose="diagnosis",
+            prompt=prompt,
+            output=None,
+            user_id=user.id if user else None,
+            duration_ms=duration,
+            status="error",
+            error=str(exc),
+        )
+    # Fallback: pass through deterministic priorities
+    return {
+        "summary": "diagnosis failed; using heuristic priorities",
+        "priorities": priorities,
+    }

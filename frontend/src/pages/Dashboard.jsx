@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { endpoints } from '../api.js'
 import { Card, Empty } from '../components/ui.jsx'
@@ -11,6 +11,8 @@ export default function Dashboard() {
   const [students, setStudents] = useState([])
   const [assignments, setAssignments] = useState([])
   const [weakStates, setWeakStates] = useState([])
+  const [selectedStudentId, setSelectedStudentId] = useState(null)
+  const [parentView, setParentView] = useState(null)
 
   useEffect(() => {
     if (user?.role === 'student') {
@@ -29,12 +31,38 @@ export default function Dashboard() {
     }
   }, [user?.role])
 
+  // Auto-select the first student for the teacher parent view.
+  useEffect(() => {
+    if (user?.role !== 'student' && students.length && !selectedStudentId) {
+      setSelectedStudentId(students[0].id)
+    }
+  }, [students, user?.role, selectedStudentId])
+
+  useEffect(() => {
+    if (!selectedStudentId) {
+      setParentView(null)
+      return
+    }
+    endpoints.parentDashboard(selectedStudentId).then(setParentView).catch(() => setParentView(null))
+  }, [selectedStudentId])
+
   if (user?.role === 'student') return <StudentView stats={studentStats} assignments={assignments} states={weakStates} />
 
   return (
     <div>
       <div className="row-between mb-4">
         <h1 style={{ margin: 0 }}>工作台</h1>
+        {students.length > 0 && (
+          <select
+            value={selectedStudentId ?? ''}
+            onChange={(e) => setSelectedStudentId(Number(e.target.value))}
+            className="select"
+          >
+            {students.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        )}
       </div>
       <div className="grid grid-4">
         <Stat label="学生总数" value={stats?.student_count ?? '—'} />
@@ -42,6 +70,8 @@ export default function Dashboard() {
         <Stat label="待批改提交" value={stats?.pending_grading_count ?? '—'} />
         <Stat label="LLM 运行（7天）" value={stats?.recent_llm_runs ?? '—'} />
       </div>
+
+      {parentView && <ParentDashboardView view={parentView} />}
 
       <Card title="需要关注的知识点（全部学生）" actions={<Link className="btn-ghost" to="/learning">进入学习闭环 →</Link>}>
         {weakStates.length === 0 ? (
@@ -72,13 +102,14 @@ export default function Dashboard() {
         ) : (
           <table className="table">
             <thead>
-              <tr><th>姓名</th><th>年级</th><th>教材</th><th>状态</th></tr>
+              <tr><th>姓名</th><th>年级</th><th>学校</th><th>教材</th><th>状态</th></tr>
             </thead>
             <tbody>
               {students.slice(0, 5).map(s => (
                 <tr key={s.id}>
                   <td>{s.name}</td>
                   <td>{s.grade || '—'}</td>
+                  <td>{s.school || '—'}</td>
                   <td>{s.textbook_version || '—'}</td>
                   <td>{s.is_active ? <span className="badge badge-success">活跃</span> : <span className="badge badge-neutral">停用</span>}</td>
                 </tr>
@@ -110,6 +141,131 @@ export default function Dashboard() {
         )}
       </Card>
     </div>
+  )
+}
+
+function ParentDashboardView({ view }) {
+  const m = view.mastery_summary || {}
+  return (
+    <>
+      <Card title={`${view.name} · 家长看板（PRD §13）`}>
+        <div className="grid grid-3">
+          <Stat label="当前目标" value={view.current_objective || '—'} />
+          <Stat label="当前章节" value={view.current_chapter || '—'} />
+          <Stat
+            label="整体掌握"
+            value={`${Math.round((m.overall || 0) * 100)}%`}
+          />
+        </div>
+      </Card>
+
+      <div className="grid grid-2">
+        <Card title="主要薄弱点">
+          {view.weak_points?.length ? (
+            <ul style={{ paddingLeft: 16, margin: 0 }}>
+              {view.weak_points.map((w, i) => (
+                <li key={i} style={{ marginBottom: 8 }}>
+                  <strong>{w.knowledge_point}</strong>
+                  {' '}— 掌握度 {Math.round((w.mastery || 0) * 100)}%
+                  <div className="muted" style={{ fontSize: 12 }}>{w.reason}</div>
+                  {w.llm_reasoning && (
+                    <div className="muted" style={{ fontSize: 12 }}>AI 解读：{w.llm_reasoning}</div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : <Empty>暂无薄弱点</Empty>}
+        </Card>
+
+        <Card title="学习趋势（最近 10 次）">
+          {view.learning_trend?.series?.length ? (
+            <TrendMini series={view.learning_trend.series} />
+          ) : <Empty>暂无评分记录</Empty>}
+          <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+            平均分：{view.learning_trend?.average_recent ?? 0}
+          </div>
+        </Card>
+      </div>
+
+      <Card title="今日任务">
+        {view.today_tasks?.length ? (
+          <table className="table">
+            <thead><tr><th>作业</th><th>截止</th><th>预计</th></tr></thead>
+            <tbody>
+              {view.today_tasks.map((t) => (
+                <tr key={t.assignment_id}>
+                  <td><Link to={`/assignments`}>{t.title}</Link></td>
+                  <td>{t.due_date ? new Date(t.due_date).toLocaleDateString() : '—'}</td>
+                  <td>{t.estimated_minutes ?? '—'} 分钟</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : <Empty>暂无今日任务</Empty>}
+      </Card>
+
+      <Card title="今日学习计划">
+        {view.today_plan?.length ? (
+          <ol style={{ paddingLeft: 18 }}>
+            {view.today_plan.map((it, i) => (
+              <li key={i} style={{ marginBottom: 6 }}>
+                <strong>Day {it.day}</strong> · {it.intervention_type} · {it.knowledge_point}
+                <div className="muted" style={{ fontSize: 12 }}>{it.description}</div>
+              </li>
+            ))}
+          </ol>
+        ) : <Empty>暂无学习计划</Empty>}
+      </Card>
+
+      <Card title={`待家长确认（${view.needs_parent_review?.length || 0}）`}>
+        {view.needs_parent_review?.length ? (
+          <table className="table">
+            <thead><tr><th>作业</th><th>AI 建议分</th><th>置信度</th><th>提交时间</th></tr></thead>
+            <tbody>
+              {view.needs_parent_review.map((r) => (
+                <tr key={r.submission_id}>
+                  <td>{r.assignment_title}</td>
+                  <td>{r.ai_suggested_score ?? '—'}</td>
+                  <td>{r.ai_confidence != null ? Math.round(r.ai_confidence * 100) + '%' : '—'}</td>
+                  <td>{new Date(r.submitted_at).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : <Empty>全部批改已完成 ✅</Empty>}
+      </Card>
+
+      <Card title="近期考试">
+        {view.upcoming_exams?.length ? (
+          <ul style={{ paddingLeft: 16 }}>
+            {view.upcoming_exams.map((e) => (
+              <li key={e.exam_id}>
+                <strong>{e.title}</strong> · {e.duration_minutes} 分钟 · 满分 {e.total_score}
+                <span className="muted"> · 已尝试 {e.attempts} 次</span>
+              </li>
+            ))}
+          </ul>
+        ) : <Empty>暂无安排</Empty>}
+      </Card>
+    </>
+  )
+}
+
+function TrendMini({ series }) {
+  const { max, min, w } = useMemo(() => {
+    const values = series.map((p) => Number(p.score) || 0)
+    return {
+      max: Math.max(100, ...values),
+      min: Math.min(0, ...values),
+      w: Math.max(320, series.length * 30),
+    }
+  }, [series])
+  const stepX = w / Math.max(1, series.length - 1)
+  const points = series.map((p, i) => `${i * stepX},${100 - (Number(p.score) / max) * 100}`).join(' ')
+  return (
+    <svg width="100%" viewBox={`0 0 ${w} 100`} preserveAspectRatio="none" style={{ background: '#f8fafc', borderRadius: 6 }}>
+      <polyline fill="none" stroke="#2563eb" strokeWidth="2" points={points} />
+    </svg>
   )
 }
 
@@ -173,7 +329,7 @@ function Stat({ label, value }) {
   return (
     <Card>
       <div className="muted" style={{ fontSize: 12 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 700, marginTop: 6 }}>{value}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, marginTop: 6, wordBreak: 'break-word' }}>{value}</div>
     </Card>
   )
 }

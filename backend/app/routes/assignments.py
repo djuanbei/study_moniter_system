@@ -19,7 +19,11 @@ from app.middleware.audit import record_audit
 from app.models.assignments import Assignment, Question, QuestionSet, Submission, SubmissionImage
 from app.models.auth import User
 from app.models.students import Student
-from app.routes._helpers import safe_join_uploads
+from app.routes._helpers import (
+    assert_supported_upload,
+    get_allowed_mime_table,
+    safe_join_uploads,
+)
 from app.routes.submissions import _submission_to_out
 from app.schemas import AssignmentOut, MixAssignIn, QuestionOut, QuestionSetOut, SubmissionOut
 from app.services.ocr import ocr_image, ocr_pdf
@@ -281,13 +285,14 @@ async def submit_assignment(
 
     combined_ocr: list[str] = []
     for idx, upload in enumerate(files, start=1):
-        mime = (upload.content_type or "").lower()
-        ext = ALLOWED_MIMES.get(mime)
-        if not ext:
-            raise HTTPException(status_code=400, detail=f"不支持的文件类型: {mime}")
         raw = await upload.read()
         if len(raw) > settings.max_upload_mb * 1024 * 1024:
             raise HTTPException(status_code=413, detail="文件过大")
+        mime, ext = assert_supported_upload(
+            raw=raw,
+            declared_mime=upload.content_type or "",
+            allowed_mimes=get_allowed_mime_table(ALLOWED_MIMES),
+        )
         sha = hashlib.sha256(raw).hexdigest()
         safe_name = f"q{idx or 0}_{ts}.{ext}"
         full_path = target_dir / safe_name

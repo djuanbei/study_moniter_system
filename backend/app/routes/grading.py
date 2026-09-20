@@ -114,6 +114,23 @@ def confirm(
     grading.feedback = payload.feedback
     grading.per_question_scores = payload.per_question_scores or grading.per_question_scores
 
+    # PRD §46 — manual mode: parent has explicitly overridden the AI suggestion.
+    if payload.manual:
+        grading.needs_review = False
+        # Record in the audit trail that the parent bypassed the AI suggestion.
+        record_audit(
+            db,
+            action="manual_grade_confirmed",
+            user=current,
+            request=request,
+            target_type="submission",
+            target_id=sub.id,
+            detail={
+                "final_score": payload.final_score,
+                "previous_ai_score": grading.llm_suggested_score,
+            },
+        )
+
     # Idempotent: repeat confirms must not append duplicate score history
     # or re-create evidence.
     was_confirmed = grading.confirmed

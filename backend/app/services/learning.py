@@ -439,17 +439,48 @@ def diagnose_student(db: Session, student_id: int) -> dict:
                 "recent_errors": recent_errors[:3],
                 "reason": f"掌握度 {int(st.mastery_score * 100)}%，"
                 + (
-                    f"近 {st.evidence_count} 次练习中常见错误：{', '.join(recent_errors[:2])}；"
-                    if recent_errors
-                    else ""
-                )
+                        f"近 {st.evidence_count} 次练习中常见错误：{', '.join(recent_errors[:2])}；"
+                        if recent_errors
+                        else ""
+                    )
                 + f"遗忘风险 {st.decay_risk}",
             }
         )
     priorities.sort(key=lambda p: p["priority_score"], reverse=True)
     for i, p in enumerate(priorities, start=1):
         p["rank"] = i
-    return {"student_id": student_id, "priorities": priorities[:5]}
+    base = {"student_id": student_id, "priorities": priorities[:5]}
+
+    # PRD §70: LLM-augment the diagnosis when available (best-effort).
+    try:
+        from app.services.llm import stage_diagnosis  # lazy
+
+        student = db.get(Student, student_id)
+        ctx = {
+            "name": student.name if student else "",
+            "grade": student.grade if student else None,
+            "weak_points": (student.weak_points or []) if student else [],
+            "strengths": (student.strengths or []) if student else [],
+        }
+        augmented = stage_diagnosis(
+            db,
+            priorities=base["priorities"],
+            student_context=ctx,
+            user=None,
+        )
+        if augmented.get("summary"):
+            base["summary"] = augmented["summary"]
+        # Merge per-priority reasoning/next_steps back into base
+        by_name = {p.get("knowledge_point"): p for p in augmented.get("priorities", []) if isinstance(p, dict)}
+        for p in base["priorities"]:
+            extra = by_name.get(p["knowledge_point"])
+            if extra:
+                p["llm_reasoning"] = extra.get("reasoning")
+                p["error_patterns"] = extra.get("error_patterns") or p.get("recent_errors")
+                p["next_steps"] = extra.get("next_steps") or []
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("diagnosis LLM augmentation skipped: %s", exc)
+    return base
 
 
 # ---------------------------------------------------------------------------

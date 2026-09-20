@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from app.config import PROJECT_ROOT, get_settings, resolve_path
 from app.database import get_db
 from app.deps import get_current_user
+from app.routes._helpers import assert_supported_upload, get_allowed_mime_table
 from app.middleware.audit import record_audit
 from app.models.auth import User
 from app.models.materials import MATERIAL_TYPES, Material
@@ -78,13 +79,19 @@ async def upload_material(
     if material_type not in MATERIAL_TYPES:
         raise HTTPException(status_code=400, detail=f"未知资料类型: {material_type}")
     settings = get_settings()
-    mime = (file.content_type or "").lower()
-    if mime != DOCX_MIME and mime not in ALLOWED_MATERIAL_MIMES:
-        raise HTTPException(status_code=400, detail=f"不支持的文件类型: {mime}")
-
     raw = await file.read()
     if len(raw) > settings.max_upload_mb * 1024 * 1024:
         raise HTTPException(status_code=413, detail="文件过大")
+
+    # Build the allowed-mime table (includes DOCX which isn't in the image table).
+    allowed = dict(ALLOWED_MATERIAL_MIMES)
+    allowed[DOCX_MIME] = "docx"
+    # Honour configure.json:app.allowed_image_types (cross-references the
+    # image ext list; non-image types like DOCX are always permitted).
+    allowed = get_allowed_mime_table(allowed) or allowed
+    mime, ext = assert_supported_upload(
+        raw=raw, declared_mime=file.content_type or "", allowed_mimes=allowed
+    )
 
     rel_path, sha = save_upload(raw=raw, filename=file.filename or "upload", mime_type=mime)
     material = Material(

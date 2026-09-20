@@ -218,6 +218,17 @@ export default function QuestionWizard() {
                     <div className="mt-2">
                       {(q.knowledge_points || []).map(k => <span key={k} className="kp-chip">{k}</span>)}
                     </div>
+                    {q.rationale && (
+                      <div className="card mt-2" style={{ background: 'var(--primary-soft)', fontSize: 13 }}>
+                        <b>为什么生成这道题（PRD §37）</b>
+                        <div style={{ marginTop: 4 }}>{q.rationale}</div>
+                        {q.error_type_hint && (
+                          <div className="muted" style={{ marginTop: 4, fontSize: 12 }}>
+                            针对错误类型：{q.error_type_hint}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {q.rubric && (
                       <details className="mt-2">
                         <summary className="muted" style={{ cursor: 'pointer' }}>评分标准</summary>

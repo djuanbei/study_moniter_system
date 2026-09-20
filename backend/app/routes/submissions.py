@@ -19,7 +19,13 @@ from app.deps import ensure_can_access_student, get_current_user
 from app.middleware.audit import record_audit
 from app.models.assignments import Assignment, Grading, Submission, SubmissionImage
 from app.models.auth import User
-from app.routes._helpers import safe_join_uploads
+from app.routes._helpers import (
+    assert_supported_upload,
+    get_allowed_mime_table,
+    get_compute_sha256,
+    get_keep_original_filename,
+    safe_join_uploads,
+)
 from app.schemas import GradingOut, SubmissionImageOut, SubmissionOut
 from app.services.ocr import ocr_image, ocr_pdf
 
@@ -142,16 +148,16 @@ async def upload_submission(
     if assignment.status == "graded":
         raise HTTPException(status_code=400, detail="该作业已批改，不能重新提交")
 
-    mime = (file.content_type or "").lower()
-    ext = ALLOWED_MIMES.get(mime)
-    if not ext:
-        raise HTTPException(status_code=400, detail=f"Unsupported file type: {mime}")
-
     raw = await file.read()
     if len(raw) > settings.max_upload_mb * 1024 * 1024:
         raise HTTPException(status_code=413, detail="File too large")
+    mime, ext = assert_supported_upload(
+        raw=raw,
+        declared_mime=file.content_type or "",
+        allowed_mimes=get_allowed_mime_table(ALLOWED_MIMES),
+    )
 
-    sha = hashlib.sha256(raw).hexdigest()
+    sha = hashlib.sha256(raw).hexdigest() if get_compute_sha256() else ""
     now = datetime.utcnow()
     ts = now.strftime("%Y%m%dT%H%M%S%f")
     rel_path_parts = (
@@ -161,7 +167,17 @@ async def upload_submission(
     )
     target_dir = safe_join_uploads(*rel_path_parts)
     target_dir.mkdir(parents=True, exist_ok=True)
-    safe_name = f"q{question_number or 0}_{ts}.{ext}"
+    # PRD §87 — honour uploads.keep_original_filename (default false).
+    if get_keep_original_filename() and file.filename:
+        stem = Path(file.filename).stem
+        # Strip path components and reject empty / hostile stems.
+        stem = "".join(c for c in stem if c.isalnum() or c in ("-", "_", ".")).strip(".")
+        if stem:
+            safe_name = f"{stem}.{ext}"
+        else:
+            safe_name = f"q{question_number or 0}_{ts}.{ext}"
+    else:
+        safe_name = f"q{question_number or 0}_{ts}.{ext}"
     full_path = target_dir / safe_name
     full_path.write_bytes(raw)
 

@@ -219,7 +219,7 @@ export default function Learning() {
                 {currentPlan.summary && <div className="muted mb-2">{currentPlan.summary}</div>}
                 <table className="table">
                   <thead>
-                    <tr><th>天</th><th>类型</th><th>任务</th><th>题量</th><th>状态</th><th></th></tr>
+                    <tr><th>天</th><th>类型</th><th>任务</th><th>题量</th><th>状态</th><th>操作（PRD §31）</th></tr>
                   </thead>
                   <tbody>
                     {currentPlan.items.map((item) => (
@@ -233,15 +233,54 @@ export default function Learning() {
                         <td>{item.question_count || '—'}</td>
                         <td>{itemStatusBadge(item.status)}</td>
                         <td>
-                          {item.question_count > 0 && item.status === 'pending' && currentPlan.status === 'approved' && (
-                            <button className="btn" disabled={!!busy}
-                                    onClick={() => run(() => endpoints.assignPlanItem(currentPlan.id, item.id), '已生成作业，学生可在「我的作业」中查看')}>
-                              生成作业
-                            </button>
-                          )}
-                          {item.assignment_id && (
-                            <Link to="/assignments" className="muted">作业 #{item.assignment_id}</Link>
-                          )}
+                          <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+                            {item.question_count > 0 && item.status === 'pending' && currentPlan.status === 'approved' && (
+                              <button className="btn" disabled={!!busy}
+                                      onClick={() => run(() => endpoints.assignPlanItem(currentPlan.id, item.id), '已生成作业，学生可在「我的作业」中查看')}>
+                                生成作业
+                              </button>
+                            )}
+                            {item.assignment_id && (
+                              <Link to="/assignments" className="muted">作业 #{item.assignment_id}</Link>
+                            )}
+                            {item.status !== 'done' && item.status !== 'skipped' && (
+                              <>
+                                <button className="btn btn-ghost" disabled={!!busy}
+                                        onClick={() => {
+                                          const v = prompt('修改任务描述', item.description || '')
+                                          if (v == null) return
+                                          const qc = prompt('题量', String(item.question_count ?? 0))
+                                          if (qc == null) return
+                                          run(
+                                            () => endpoints.modifyPlanItem(currentPlan.id, item.id, {
+                                              description: v,
+                                              question_count: Number(qc) || 0,
+                                            }),
+                                            '已修改',
+                                          )
+                                        }}>
+                                  修改
+                                </button>
+                                <button className="btn btn-ghost" disabled={!!busy}
+                                        onClick={() => {
+                                          const v = prompt('调整干预类型（EXPLANATION/EXAMPLE/PRACTICE/REVIEW/QUIZ/EXAM/REFLECTION）', item.intervention_type)
+                                          if (v == null) return
+                                          run(
+                                            () => endpoints.adjustPlanItem(currentPlan.id, item.id, {
+                                              intervention_type: v.toUpperCase(),
+                                            }),
+                                            '已调整',
+                                          )
+                                        }}>
+                                  调整
+                                </button>
+                                <button className="btn btn-ghost" disabled={!!busy}
+                                        onClick={() => run(() => endpoints.skipPlanItem(currentPlan.id, item.id), '已跳过该任务')}>
+                                  跳过
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

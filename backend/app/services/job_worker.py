@@ -5,6 +5,9 @@ queued jobs serially (max_concurrent_heavy_jobs = 1). Jobs are claimed
 atomically so multiple uvicorn workers never double-run a job. Failures
 retry up to max_attempts, then the job is FAILED with the error stored.
 
+States (PRD §82): QUEUED -> RUNNING -> SUCCEEDED | FAILED; QUEUED jobs can
+be CANCELLED before they are claimed.
+
 Handlers registry maps PRD §82 job types to callables:
     handler(db, payload: dict, user_id) -> result dict (stored in job.result)
 """
@@ -164,6 +167,175 @@ def run_material_discovery(db: Session, payload: dict, user_id: Optional[int]) -
     return discover_materials(db)
 
 
+# ---- Additional PRD §82 job types: serialized, retryable, async ----
+
+@register("MATERIAL_IMPORT")
+def run_material_import(db: Session, payload: dict, user_id: Optional[int]) -> dict:
+    """§19-20: import a remote URL into the material library."""
+    from app.services.material_import import import_from_url
+
+    return import_from_url(
+        db,
+        url=str(payload["url"]),
+        title=payload.get("title") or "",
+        material_type=payload.get("material_type", "TEXTBOOK"),
+        user=None,
+    )
+
+
+@register("OCR")
+def run_ocr(db: Session, payload: dict, user_id: Optional[int]) -> dict:
+    """§51-52: run OCR on an uploaded file (heavy work off the request path)."""
+    from pathlib import Path
+
+    from app.services.ocr import ocr_image, ocr_pdf
+
+    rel_path = payload.get("rel_path")
+    if not rel_path:
+        raise ValueError("rel_path is required")
+    p = Path(rel_path)
+    text = ocr_pdf(p) if p.suffix.lower() == ".pdf" else ocr_image(p)
+    return {"rel_path": rel_path, "ocr_chars": len(text), "preview": text[:500]}
+
+
+@register("VISION")
+def run_vision(db: Session, payload: dict, user_id: Optional[int]) -> dict:
+    """§51-52: vision-model OCR / extraction."""
+    from pathlib import Path
+
+    from app.services.ocr import ocr_with_vision
+
+    rel_path = payload.get("rel_path")
+    if not rel_path:
+        raise ValueError("rel_path is required")
+    text = ocr_with_vision(Path(rel_path))
+    return {"rel_path": rel_path, "vision_chars": len(text), "preview": text[:500]}
+
+
+@register("QUESTION_VALIDATION")
+def run_question_validation(db: Session, payload: dict, user_id: Optional[int]) -> dict:
+    """§38: deterministic + LLM validation pass for a candidate question set."""
+    from app.models.assignments import QuestionSet
+    from app.services.rubric import validate_question
+
+    qs = db.get(QuestionSet, int(payload["question_set_id"]))
+    if not qs:
+        raise ValueError("question_set not found")
+    issues: list[str] = []
+    for q in qs.questions:
+        issues.extend(validate_question(q))
+    return {"question_set_id": qs.id, "issues": list({*issues})}
+
+
+@register("SIMILAR_QUESTION_SEARCH")
+def run_similar_search(db: Session, payload: dict, user_id: Optional[int]) -> dict:
+    """§41: async wrapper around similarity search so heavy loads don't block."""
+    from app.services.question_bank import find_similar
+
+    results = find_similar(
+        db,
+        question_id=int(payload["question_id"]),
+        top_k=int(payload.get("top_k", 5)),
+        same_kp_only=bool(payload.get("same_kp_only", False)),
+    )
+    return {"question_id": payload["question_id"], "matches": results}
+
+
+@register("GRADING")
+def run_grading(db: Session, payload: dict, user_id: Optional[int]) -> dict:
+    """§42-48: AI grading for a submission; result mirrors /grading/suggest."""
+    from app.models.assignments import Grading, QuestionSet, Submission
+    from app.services.learning import grading_triage
+
+    sub = db.get(Submission, int(payload["submission_id"]))
+    if not sub:
+        raise ValueError("submission not found")
+    from app.models.assignments import Assignment
+
+    a = db.get(Assignment, sub.assignment_id)
+    qs = db.get(QuestionSet, a.question_set_id) if a else None
+    if qs is None:
+        raise ValueError("question set not found")
+
+    from app.services.llm import stage_grading
+
+    advisory = stage_grading(db, submission=sub, question_set=qs, user=None)
+    grading = (
+        db.query(Grading).filter(Grading.submission_id == sub.id).order_by(Grading.id.desc()).first()
+    )
+    if grading is None:
+        grading = Grading(submission_id=sub.id)
+        db.add(grading)
+    grading.llm_suggested_score = advisory.get("suggested_score")
+    grading.llm_suggested_feedback = advisory.get("feedback")
+    grading.llm_knowledge_mastery = advisory.get("knowledge_mastery")
+    grading.per_question_scores = advisory.get("per_question")
+
+    per_question = advisory.get("per_question") or []
+    qtypes = [q.qtype for q in qs.questions]
+    confidence, needs_review = grading_triage(per_question, qtypes)
+    grading.llm_confidence = confidence
+    grading.needs_review = needs_review
+    db.commit()
+    return {"grading_id": grading.id, "needs_review": needs_review, "confidence": confidence}
+
+
+@register("STATE_UPDATE")
+def run_state_update(db: Session, payload: dict, user_id: Optional[int]) -> dict:
+    """§60: refresh decay_risk / next_review_at (heavy on large student pools)."""
+    from app.services.learning import compute_decay_refresh
+
+    student_id = payload.get("student_id")
+    compute_decay_refresh(db, int(student_id) if student_id else None)
+    db.commit()
+    return {"student_id": student_id, "ok": True}
+
+
+@register("DIAGNOSIS")
+def run_diagnosis(db: Session, payload: dict, user_id: Optional[int]) -> dict:
+    """§29 + §70: Diagnosis Agent (deterministic + optional LLM augmentation)."""
+    from app.services.learning import diagnose_student
+
+    sid = int(payload["student_id"])
+    result = diagnose_student(db, sid)
+    return {"student_id": sid, "priorities": result.get("priorities", [])}
+
+
+@register("PDF_EXPORT")
+def run_pdf_export(db: Session, payload: dict, user_id: Optional[int]) -> dict:
+    """§78: PDF export for a question set / report (heavy work)."""
+    from app.services.archive import export_question_set_pdf
+
+    out_path = export_question_set_pdf(
+        db, int(payload["question_set_id"]), variant=payload.get("variant", "student")
+    )
+    return {"path": str(out_path), "question_set_id": payload["question_set_id"]}
+
+
+@register("DOCX_EXPORT")
+def run_docx_export(db: Session, payload: dict, user_id: Optional[int]) -> dict:
+    """§79: DOCX export for a question set."""
+    from app.services.docx_export import export_question_set_docx
+
+    out_path = export_question_set_docx(
+        db, int(payload["question_set_id"]), variant=payload.get("variant", "student")
+    )
+    return {"path": str(out_path), "question_set_id": payload["question_set_id"]}
+
+
+@register("ARCHIVE_EXPORT")
+def run_archive_export(db: Session, payload: dict, user_id: Optional[int]) -> dict:
+    """§67: archive ZIP/CSV/PDF for a student."""
+    from app.services.archive import export_student_archive
+
+    out_path = export_student_archive(
+        db,
+        int(payload["student_id"]),
+        formats=tuple(payload.get("formats", ("pdf", "csv", "images_zip"))),
+    )
+    return {"path": str(out_path), "student_id": payload["student_id"]}
+
+
 # ---------------------------------------------------------------------------
 # Claim / run loop
 # ---------------------------------------------------------------------------
@@ -181,6 +353,18 @@ def enqueue(db: Session, *, job_type: str, payload: dict, user_id: Optional[int]
     )
     db.add(job)
     db.flush()
+    return job
+
+
+def cancel_job(db: Session, job_id: int) -> Job:
+    """PRD §82 — cancel a QUEUED job. RUNNING jobs cannot be cancelled safely."""
+    job = db.get(Job, job_id)
+    if not job:
+        raise ValueError("job not found")
+    if job.status == "QUEUED":
+        job.status = "CANCELLED"
+        job.finished_at = datetime.utcnow()
+        db.commit()
     return job
 
 

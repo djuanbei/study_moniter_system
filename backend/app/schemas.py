@@ -104,6 +104,7 @@ class ChapterInferOut(BaseModel):
 class StudentIn(BaseModel):
     name: str
     grade: Optional[str] = None
+    school: Optional[str] = None  # PRD §15
     class_id: Optional[int] = None
     textbook_version: Optional[str] = None
     current_chapter_id: Optional[int] = None
@@ -238,6 +239,7 @@ class GradingConfirmIn(BaseModel):
     feedback: str
     per_question_scores: Optional[list[dict[str, Any]] | dict[str, Any]] = None
     reason: Optional[str] = None  # required when modifying an already-confirmed score (PRD §50)
+    manual: bool = False  # PRD §46 — parent explicitly grades without AI
 
 
 class GradingOut(BaseModel):

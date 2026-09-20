@@ -1,4 +1,4 @@
-"""Route helpers: bootstrap, role checks, audit shortcuts."""
+"""Route helpers: bootstrap, role checks, audit shortcuts, file validation."""
 
 from __future__ import annotations
 
@@ -10,6 +10,80 @@ from fastapi import HTTPException, Request, status
 
 from app.config import get_business_config, resolve_path
 from app.security import sha256_of_bytes
+
+
+# --- Magic Bytes validation (PRD §85) ----------------------------------------
+# File-signature sniffing so a client cannot lie about Content-Type.
+
+_MAGIC_BYTES: list[tuple[bytes, str, str]] = [
+    (b"\xff\xd8\xff", "image/jpeg", "jpg"),
+    (b"\x89PNG\r\n\x1a\n", "image/png", "png"),
+    (b"RIFF", "image/webp", "webp"),  # followed by ....WEBP at offset 8
+    (b"%PDF-", "application/pdf", "pdf"),
+    (b"PK\x03\x04", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx"),
+]
+
+_WEBP_TRAILER_OFFSET = 8
+
+
+def sniff_mime(data: bytes) -> tuple[str, str] | None:
+    """Return (mime, ext) by inspecting the first few bytes; None when unrecognised.
+
+    PDF/DOCX are sniffed but not part of the standard image allow-list (caller
+    chooses what to accept). WEBP needs a trailer check because RIFF is also
+    used by WAV/AVI.
+    """
+    if not data:
+        return None
+    head = data[:16]
+    for magic, mime, ext in _MAGIC_BYTES:
+        if head.startswith(magic):
+            if mime == "image/webp":
+                if len(data) > _WEBP_TRAILER_OFFSET + 4 and data[8:12] == b"WEBP":
+                    return mime, ext
+                continue
+            return mime, ext
+    return None
+
+
+def assert_supported_upload(
+    *,
+    raw: bytes,
+    declared_mime: str,
+    allowed_mimes: dict[str, str],
+) -> tuple[str, str]:
+    """PRD §85 — verify both Content-Type header and file magic bytes match.
+
+    Returns the (mime, ext) actually used for storage. Raises 400 when the
+    declared MIME is not in `allowed_mimes` OR when the magic bytes do not
+    agree with the declared MIME (i.e. the client lied).
+
+    The MIME allow-list may carry legacy aliases (e.g. ``image/jpg``) that
+    map to the same extension as their canonical form (``image/jpeg``). We
+    compare the *extension* rather than the literal MIME string so that
+    legacy aliases do not get falsely rejected.
+    """
+    declared = (declared_mime or "").lower().strip()
+    ext = allowed_mimes.get(declared)
+    if not ext:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported file type: {declared or '(none)'}",
+        )
+    sniffed = sniff_mime(raw)
+    if sniffed is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File contents do not match declared type: {declared}",
+        )
+    # Compare extensions, not MIME strings, so ``image/jpg`` (legacy alias)
+    # and ``image/jpeg`` (canonical) both pass for a real JPEG.
+    if sniffed[1] != ext:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File contents do not match declared type: {declared}",
+        )
+    return sniffed[0], ext
 
 
 logger = logging.getLogger(__name__)
@@ -70,6 +144,37 @@ def safe_join_uploads(*parts: str) -> Path:
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid path") from None
     return candidate
+
+
+def get_keep_original_filename() -> bool:
+    """PRD §87 — honour ``uploads.keep_original_filename`` (default false)."""
+    return bool((get_business_config().get("uploads") or {}).get("keep_original_filename", False))
+
+
+def get_compute_sha256() -> bool:
+    """PRD §87 — honour ``uploads.compute_sha256`` (default true)."""
+    val = (get_business_config().get("uploads") or {}).get("compute_sha256", True)
+    return bool(val)
+
+
+def get_allowed_mime_table(defaults: dict[str, str]) -> dict[str, str]:
+    """Honour ``app.allowed_image_types`` when present.
+
+    ``configure.json`` lists extensions (jpg/jpeg/png/webp/pdf). We map each
+    extension to its canonical MIME type. Extensions not in the defaults
+    table are ignored.
+    """
+    cfg_exts = (get_business_config().get("app") or {}).get("allowed_image_types")
+    if not cfg_exts:
+        return defaults
+    ext_to_mime = {v: k for k, v in defaults.items()}
+    out: dict[str, str] = {}
+    for ext in cfg_exts:
+        ext = str(ext).lower().lstrip(".")
+        mime = ext_to_mime.get(ext)
+        if mime:
+            out[mime] = defaults[mime]
+    return out or defaults
 
 
 def sha256_bytes(data: bytes) -> str:

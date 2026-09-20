@@ -6,7 +6,19 @@ Layout:
   - `assignments`: Assignment, QuestionSet, Question, Submission, SubmissionImage, Grading
   - `learning` : KnowledgePoint, StudentKnowledgeState(+History), LearningObjective,
                  LearningEvidence, ParentFeedback, LearningPlan(+Item)
-  - `system`   : LLMRun, Setting
+  - `materials`: Material, MaterialCandidate
+  - `exams`    : Exam, ExamAttempt
+  - `historical`: HistoricalAssessment, HistoricalQuestion
+  - `question_bank`: QuestionBankItem, QuestionVersion, BankUpdateCandidate
+  - `extended` : Textbook/Version/Section, MaterialVersion/Page/Chunk,
+                 KnowledgePointVersion, LearningSession, LearningIntervention,
+                 StudentAnswer, AnswerVersion, ExamVersion, ExamQuestion,
+                 AssignmentVersion, ParentAnnotation, ParentScore,
+                 StudentProgressHistory, QuestionEmbedding, QuestionSignature,
+                 ErrorPattern, StudentErrorEvidence, MaterialAgentRun,
+                 KnowledgeUpdateRun, QuestionBankUpdateRun, ImportReview,
+                 ImportReviewItem, Export
+  - `system`   : LLMRun, Job, Setting
 """
 
 from app.models.auth import AuditLog, User
@@ -37,6 +49,35 @@ from app.models.exams import Exam, ExamAttempt
 from app.models.question_bank import BankUpdateCandidate, QuestionBankItem, QuestionVersion
 from app.models.students import Chapter, Class, Student, StudentProgress
 from app.models.system import Job, LLMRun, Setting
+from app.models.extended import (
+    AnswerVersion,
+    AssignmentVersion,
+    ErrorPattern,
+    ExamQuestion,
+    ExamVersion,
+    Export,
+    ImportReview,
+    ImportReviewItem,
+    KnowledgePointVersion,
+    KnowledgeUpdateRun,
+    LearningIntervention,
+    LearningSession,
+    MaterialAgentRun,
+    MaterialChunk,
+    MaterialPage,
+    MaterialVersion,
+    ParentAnnotation,
+    ParentScore,
+    QuestionBankUpdateRun,
+    QuestionEmbedding,
+    QuestionSignature,
+    Section,
+    StudentAnswer,
+    StudentErrorEvidence,
+    StudentProgressHistory,
+    Textbook,
+    TextbookVersion,
+)
 
 ALL_MODELS = [
     User,
@@ -44,7 +85,9 @@ ALL_MODELS = [
     Class,
     Chapter,
     StudentProgress,
+    StudentProgressHistory,
     Assignment,
+    AssignmentVersion,
     QuestionSet,
     Question,
     Submission,
@@ -52,6 +95,7 @@ ALL_MODELS = [
     Grading,
     GradeVersion,
     KnowledgePoint,
+    KnowledgePointVersion,
     StudentKnowledgeState,
     StudentKnowledgeStateHistory,
     LearningObjective,
@@ -59,17 +103,53 @@ ALL_MODELS = [
     ParentFeedback,
     LearningPlan,
     LearningPlanItem,
+    LearningIntervention,
     InterventionOutcome,
     Material,
+    MaterialVersion,
+    MaterialPage,
+    MaterialChunk,
     LLMRun,
     AuditLog,
     Setting,
+    Job,
+    Textbook,
+    TextbookVersion,
+    Section,
+    LearningSession,
+    StudentAnswer,
+    AnswerVersion,
+    ExamVersion,
+    ExamQuestion,
+    ParentAnnotation,
+    ParentScore,
+    ErrorPattern,
+    StudentErrorEvidence,
+    QuestionEmbedding,
+    QuestionSignature,
+    MaterialAgentRun,
+    KnowledgeUpdateRun,
+    QuestionBankUpdateRun,
+    ImportReview,
+    ImportReviewItem,
+    Export,
 ]
 
 
 def register_all() -> None:
     """Import all model modules so their tables register with the metadata."""
-    from app.models import assignments, auth, exams, historical, learning, materials, question_bank, students, system  # noqa: F401
+    from app.models import (  # noqa: F401
+        assignments,
+        auth,
+        exams,
+        extended,
+        historical,
+        learning,
+        materials,
+        question_bank,
+        students,
+        system,
+    )
 
 
 __all__ = [
@@ -81,7 +161,9 @@ __all__ = [
     "Class",
     "Chapter",
     "StudentProgress",
+    "StudentProgressHistory",
     "Assignment",
+    "AssignmentVersion",
     "QuestionSet",
     "Question",
     "Submission",
@@ -89,6 +171,7 @@ __all__ = [
     "Grading",
     "GradeVersion",
     "KnowledgePoint",
+    "KnowledgePointVersion",
     "StudentKnowledgeState",
     "StudentKnowledgeStateHistory",
     "LearningObjective",
@@ -96,17 +179,40 @@ __all__ = [
     "ParentFeedback",
     "LearningPlan",
     "LearningPlanItem",
+    "LearningIntervention",
     "InterventionOutcome",
     "KnowledgeUpdateCandidate",
     "Material",
-    "MaterialCandidate",
+    "MaterialVersion",
+    "MaterialPage",
+    "MaterialChunk",
     "HistoricalAssessment",
     "HistoricalQuestion",
     "Exam",
     "ExamAttempt",
+    "ExamVersion",
+    "ExamQuestion",
     "QuestionBankItem",
     "QuestionVersion",
     "BankUpdateCandidate",
+    "QuestionEmbedding",
+    "QuestionSignature",
+    "MaterialAgentRun",
+    "KnowledgeUpdateRun",
+    "QuestionBankUpdateRun",
+    "ImportReview",
+    "ImportReviewItem",
+    "Export",
+    "Textbook",
+    "TextbookVersion",
+    "Section",
+    "LearningSession",
+    "StudentAnswer",
+    "AnswerVersion",
+    "ParentAnnotation",
+    "ParentScore",
+    "ErrorPattern",
+    "StudentErrorEvidence",
     "LLMRun",
     "Job",
     "AuditLog",

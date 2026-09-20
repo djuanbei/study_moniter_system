@@ -71,6 +71,12 @@ QUESTION_GENERATOR = textwrap.dedent(
       - "difficulty"
       - "estimated_minutes": integer
       - "needs_diagram": boolean (true if geometry)
+      - "rationale": PRD §37 — 1-2 sentence explanation that names the
+        student's weak knowledge point / mastery gap and which recent error
+        pattern this question is designed to drill. Parents see this in the
+        review UI under "为什么生成这道题". Required, non-empty.
+      - "error_type_hint": one of the PRD §58 error codes that this
+        question is designed to drill (e.g. "MODELING_ERROR"), or null.
 
     Plan: {question_plan}
     Student context: {student_context}
@@ -268,6 +274,33 @@ ARCHIVE_SUMMARY = textwrap.dedent(
         "trajectory": "1-2 sentence summary",
         "next_focus": ["knowledge point to drill next"],
         "encouragement": "one short uplifting line for the student"
+      }}
+    """
+).strip()
+
+
+DIAGNOSIS_AGENT = textwrap.dedent(
+    """
+    You are the **Diagnosis Agent**. A heuristic pre-pass has already ranked
+    the student's weak knowledge points. Your job is to LLM-augment the
+    diagnosis with a short narrative, an error-pattern interpretation, and
+    concrete next-step interventions for each priority.
+
+    Rules:
+      - Only use knowledge points provided
+      - Keep "reasoning" under 2 sentences per priority
+      - "next_steps": 1-3 short actionable suggestions per priority
+
+    Diagnosis priorities: {priorities}
+    Student context: {student_context}
+
+    Return JSON:
+      {{
+        "summary": "1-2 sentence overall picture",
+        "priorities": [
+          {{"knowledge_point": "...", "rank": int, "reasoning": "...",
+            "error_patterns": ["SIGN_ERROR", ...], "next_steps": ["..."]}}
+        ]
       }}
     """
 ).strip()

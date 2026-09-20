@@ -29,9 +29,11 @@ export default function Grading() {
 
   const [submissions, setSubmissions] = useState([])
   const [active, setActive] = useState(null)
+  const [assignmentDetail, setAssignmentDetail] = useState(null)
   const [grading, setGrading] = useState(null)
   const [score, setScore] = useState('')
   const [feedback, setFeedback] = useState('')
+  const [manualMode, setManualMode] = useState(false)
   const [msg, setMsg] = useState('')
   const [error, setError] = useState('')
 
@@ -44,7 +46,14 @@ export default function Grading() {
   async function loadSubmission(id) {
     const sub = submissions.find(s => s.id === id)
     if (sub) {
-      setActive(sub); setScore(''); setFeedback(''); setMsg(''); setGrading(null); setError('')
+      setActive(sub); setScore(''); setFeedback(''); setMsg(''); setGrading(null); setError(''); setManualMode(false)
+      // Load assignment detail (questions, rubrics, answer keys) — PRD §46
+      try {
+        const detail = await endpoints.assignmentDetail(sub.assignment_id)
+        setAssignmentDetail(detail)
+      } catch {
+        setAssignmentDetail(null)
+      }
       // restore an existing advisory grading if present
       try {
         const gs = await endpoints.gradingBySubmission(id)
@@ -79,17 +88,21 @@ export default function Grading() {
         submission_id: active.id,
         final_score: Number(score),
         feedback,
+        manual: manualMode,
       })
       setGrading(g)
-      setMsg('已确认分数，已生成学习证据并更新知识点掌握度')
+      setMsg(manualMode
+        ? '已人工批改，已生成学习证据并更新知识点掌握度'
+        : '已确认分数，已生成学习证据并更新知识点掌握度')
     } catch (err) { setError(err.message) }
   }
 
   const perQuestion = grading ? perQuestionList(grading.per_question_scores) : []
+  const questions = assignmentDetail?.questions || []
 
   return (
     <div>
-      <h1 style={{ marginTop: 0 }}>提交批改</h1>
+      <h1 style={{ marginTop: 0 }}>提交批改（PRD §46）</h1>
       <div className="grid" style={{ gridTemplateColumns: '300px 1fr' }}>
         <Card title="待批改提交">
           {submissions.length === 0 ? <Empty>暂无提交</Empty> : (
@@ -141,8 +154,43 @@ export default function Grading() {
                 )}
               </Card>
 
+              <Card title="题目、标准答案与评分标准（PRD §46）">
+                {questions.length === 0 ? <Empty>无题目数据</Empty> : (
+                  <ol style={{ paddingLeft: 18 }}>
+                    {questions.map(q => (
+                      <li key={q.id} style={{ marginBottom: 14 }}>
+                        <div><b>题 {q.order}</b> · {q.qtype} · {q.knowledge_points?.join('、') || '—'}</div>
+                        <div className="prompt mt-1">{q.prompt}</div>
+                        {q.answer_key && (
+                          <details className="mt-1">
+                            <summary className="muted" style={{ cursor: 'pointer' }}>标准答案</summary>
+                            <div className="card" style={{ marginTop: 4 }}>{q.answer_key}</div>
+                          </details>
+                        )}
+                        {q.rubric && (
+                          <details className="mt-1">
+                            <summary className="muted" style={{ cursor: 'pointer' }}>评分标准</summary>
+                            <div className="card" style={{ marginTop: 4 }}>{q.rubric}</div>
+                          </details>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </Card>
+
               <Card title="确认分数">
-                {grading && (
+                <div className="row mb-2" style={{ gap: 8 }}>
+                  <button
+                    className={'btn ' + (!manualMode ? 'btn-primary' : '')}
+                    onClick={() => setManualMode(false)}
+                  >接受 AI 建议</button>
+                  <button
+                    className={'btn ' + (manualMode ? 'btn-primary' : '')}
+                    onClick={() => setManualMode(true)}
+                  >人工批改（不使用 AI）</button>
+                </div>
+                {grading && !manualMode && (
                   <div className="card" style={{ padding: 12, background: 'var(--primary-soft)', marginBottom: 12 }}>
                     <div className="row-between">
                       <div><b>LLM 建议分数：</b>{grading.llm_suggested_score ?? '—'}</div>
@@ -157,6 +205,12 @@ export default function Grading() {
                         </span>
                       </div>
                     </div>
+                    {grading.llm_suggested_feedback && (
+                      <div className="mt-2">
+                        <div className="muted" style={{ fontSize: 12 }}>AI 反馈（PRD §46）：</div>
+                        <div className="card" style={{ marginTop: 4 }}>{grading.llm_suggested_feedback}</div>
+                      </div>
+                    )}
                     {grading.llm_knowledge_mastery && (
                       <div className="mt-2">
                         <div className="muted" style={{ fontSize: 12 }}>知识点掌握度：</div>
@@ -196,12 +250,15 @@ export default function Grading() {
                 {error && <div className="form-error">{error}</div>}
                 {msg && <div className="badge badge-success mt-2">{msg}</div>}
                 <div className="row mt-4">
-                  <button className="btn btn-primary" onClick={confirm}>确认分数并生成学习证据</button>
+                  <button className="btn btn-primary" onClick={confirm}>
+                    {manualMode ? '提交人工批改' : '确认分数并生成学习证据'}
+                  </button>
                   {grading && grading.llm_suggested_score != null && (
                     <button className="btn" onClick={() => {
+                      setManualMode(false)
                       setScore(grading.llm_suggested_score)
                       setFeedback(grading.llm_suggested_feedback ?? '')
-                    }}>接受 AI 建议</button>
+                    }}>采用 AI 建议</button>
                   )}
                 </div>
               </Card>

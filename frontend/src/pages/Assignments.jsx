@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { endpoints } from '../api.js'
 import { Card, Empty } from '../components/ui.jsx'
@@ -53,6 +53,9 @@ export default function Assignments() {
             <option value="cancelled">已取消</option>
           </select>
         </div>
+      </Card>
+      <Card title="纸质试卷回传（PRD §77：打印 → 完成 → 拍照/扫描 → 上传 → OCR → AI 批改 → 家长确认）">
+        <PaperExamUpload onUploaded={load} students={students} />
       </Card>
       <Card title={`作业列表（${list.length}）`}>
         {list.length === 0 ? <Empty>暂无作业</Empty> : (
@@ -156,4 +159,77 @@ function badge(s) {
   if (s === 'assigned') return <span className="badge badge-primary">已分配</span>
   if (s === 'cancelled') return <span className="badge badge-neutral">已取消</span>
   return <span className="badge badge-neutral">{s}</span>
+}
+
+function PaperExamUpload({ onUploaded, students }) {
+  const [assignmentId, setAssignmentId] = useState('')
+  const [studentId, setStudentId] = useState('')
+  const [files, setFiles] = useState([])
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [err, setErr] = useState('')
+  const inputRef = useRef(null)
+
+  async function submit(e) {
+    e.preventDefault()
+    setErr(''); setMsg('')
+    if (!assignmentId) { setErr('请选择作业'); return }
+    if (!studentId) { setErr('请选择学生'); return }
+    if (files.length === 0) { setErr('请至少选择一张图片或 PDF'); return }
+    setBusy(true)
+    try {
+      const fd = new FormData()
+      for (const f of files) fd.append('files', f)
+      fd.append('text_answer', '')
+      const out = await endpoints.submitAssignment(assignmentId, fd)
+      setMsg(`已上传 ${files.length} 个文件，提交 #${out.id} 已记录，进入批改队列。`)
+      setFiles([])
+      if (inputRef.current) inputRef.current.value = ''
+      onUploaded?.()
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={submit}>
+      <div className="grid grid-3" style={{ gap: 12 }}>
+        <div>
+          <label>选择作业</label>
+          <input value={assignmentId} onChange={(e) => setAssignmentId(e.target.value)} placeholder="作业 ID" />
+        </div>
+        <div>
+          <label>学生</label>
+          <select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
+            <option value="">— 请选择 —</option>
+            {students.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label>试卷扫描（多张图片或一个 PDF）</label>
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            onChange={(e) => setFiles(Array.from(e.target.files || []))}
+          />
+        </div>
+      </div>
+      {files.length > 0 && (
+        <div className="muted mt-2" style={{ fontSize: 12 }}>
+          已选 {files.length} 个文件：{files.map((f) => f.name).join('、')}
+        </div>
+      )}
+      {err && <div className="form-error">{err}</div>}
+      {msg && <div className="badge badge-success mt-2">{msg}</div>}
+      <div className="row mt-2">
+        <button className="btn btn-primary" disabled={busy} type="submit">
+          {busy ? '上传中…' : '上传并触发 AI 批改'}
+        </button>
+      </div>
+    </form>
+  )
 }

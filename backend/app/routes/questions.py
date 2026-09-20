@@ -132,6 +132,8 @@ def persist_sets(
                     estimated_minutes=q.get("estimated_minutes"),
                     diagram_svg=markup,
                     diagram_format=fmt,
+                    rationale=q.get("rationale"),  # PRD §37
+                    error_type_hint=q.get("error_type_hint"),
                 )
             )
         persisted.append(qs)
