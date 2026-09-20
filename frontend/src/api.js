@@ -232,6 +232,9 @@ export const endpoints = {
     api.get(`/knowledge-updates/candidates?status=${status}`),
   knowledgeApprove: (id) => api.post(`/knowledge-updates/candidates/${id}/approve`),
   knowledgeReject: (id, note) => api.post(`/knowledge-updates/candidates/${id}/reject`, { note }),
+  learningPolicy: (studentId) => api.get(`/policy/${studentId}`),
+  learningPath: (studentId) => api.get(`/learning-path/${studentId}`),
+  knowledgeMap: () => api.get('/knowledge-map'),
 
   exportCsv: (id) => api.get(`/archive/students/${id}/csv`),
   exportPdf: (id) => api.get(`/archive/students/${id}/pdf`),

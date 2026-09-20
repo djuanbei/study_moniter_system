@@ -16,6 +16,9 @@ export default function Dashboard() {
     if (user?.role === 'student') {
       endpoints.studentDashboard().then(setStudentStats)
       endpoints.assignments({ status: 'graded' }).then(setAssignments)
+      if (user.student_id) {
+        endpoints.knowledgeStates(user.student_id).then(setWeakStates).catch(() => {})
+      }
     } else {
       Promise.all([
         endpoints.dashboard(),
@@ -26,7 +29,7 @@ export default function Dashboard() {
     }
   }, [user?.role])
 
-  if (user?.role === 'student') return <StudentView stats={studentStats} assignments={assignments} />
+  if (user?.role === 'student') return <StudentView stats={studentStats} assignments={assignments} states={weakStates} />
 
   return (
     <div>
@@ -110,7 +113,7 @@ export default function Dashboard() {
   )
 }
 
-function StudentView({ stats, assignments }) {
+function StudentView({ stats, assignments, states = [] }) {
   return (
     <div>
       <h1 style={{ marginTop: 0 }}>我的学习</h1>
@@ -120,6 +123,27 @@ function StudentView({ stats, assignments }) {
         <Stat label="已批改" value={stats?.graded_assignments ?? '—'} />
         <Stat label="平均分" value={stats ? stats.average_score : '—'} />
       </div>
+      {states.length > 0 && (
+        <Card title="我的知识点掌握（PRD §14）">
+          <table className="table">
+            <thead><tr><th>知识点</th><th>掌握度</th><th>下次复习</th></tr></thead>
+            <tbody>
+              {states.map((st) => (
+                <tr key={st.id}>
+                  <td>{st.knowledge_point_name}</td>
+                  <td>
+                    <div className="mastery-bar">
+                      <div className="mastery-fill" style={{ width: `${Math.round(st.mastery_score * 100)}%` }} />
+                      <span>{Math.round(st.mastery_score * 100)}%</span>
+                    </div>
+                  </td>
+                  <td className="muted">{st.next_review_at ? new Date(st.next_review_at).toLocaleDateString() : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
       <Card title="最近成绩">
         {!stats || stats.recent_grades.length === 0 ? (
           <Empty>暂无成绩</Empty>

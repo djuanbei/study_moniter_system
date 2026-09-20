@@ -460,8 +460,18 @@ _INTERVENTION_BY_RANK = ["REVIEW", "PRACTICE", "PRACTICE", "PRACTICE", "QUIZ"]
 _DIFFICULTY_BY_MASTERY = lambda m: "easy" if m < 0.4 else "medium" if m < 0.7 else "hard"  # noqa: E731
 
 
-def build_heuristic_plan(db: Session, student: Student, diagnosis: dict) -> dict:
-    """Deterministic 5-day plan from the diagnosis priorities."""
+def build_heuristic_plan(db: Session, student: Student, diagnosis: dict,
+                         policy: Optional[dict] = None) -> dict:
+    """Deterministic 5-day plan from the diagnosis priorities.
+
+    With a learning policy (§94) present, practice days use the intervention
+    type that historically moves THIS student's mastery the most.
+    """
+    practice_type = "PRACTICE"
+    if policy:
+        from app.services.policy import preferred_practice_type
+
+        practice_type = preferred_practice_type(policy)
     items: list[dict] = []
     priorities = diagnosis.get("priorities", [])[:3]
     if not priorities:
@@ -490,12 +500,14 @@ def build_heuristic_plan(db: Session, student: Student, diagnosis: dict) -> dict
             continue
         p = priorities[(day - 1) % len(priorities)]
         kind = _INTERVENTION_BY_RANK[(day - 1) % 4]
+        if kind == "PRACTICE" and practice_type != "PRACTICE":
+            kind = practice_type  # §94 adaptive sequencing
         mastery = float(p.get("mastery", 0.0))
         if kind == "REVIEW":
             desc = f"复习{p['knowledge_point']}：概念讲解 + 例题 2 道"
             qc, mins = 2, 20
         else:
-            desc = f"{p['knowledge_point']} 练习（{_DIFFICULTY_BY_MASTERY(mastery)} 难度，{6 - day} 道）"
+            desc = f"{p['knowledge_point']} {kind}（{_DIFFICULTY_BY_MASTERY(mastery)} 难度，{6 - day} 道）"
             qc, mins = max(4, 8 - day), 25
         items.append(
             {
@@ -519,6 +531,13 @@ def build_heuristic_plan(db: Session, student: Student, diagnosis: dict) -> dict
 def generate_plan(db: Session, student: Student, user_id: Optional[int] = None) -> LearningPlan:
     """Generate a DRAFT learning plan: LLM first, heuristic fallback (PRD §30)."""
     diagnosis = diagnose_student(db, student.id)
+    policy = None
+    try:
+        from app.services.policy import learning_policy
+
+        policy = learning_policy(db, student.id)  # §94 adaptive sequencing
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("policy computation failed: %s", exc)
     plan_data: Optional[dict] = None
     llm_run_id = None
     generated_by = "heuristic"
@@ -547,7 +566,7 @@ def generate_plan(db: Session, student: Student, user_id: Optional[int] = None) 
         logger.warning("LLM plan generation failed, falling back to heuristic: %s", exc)
 
     if plan_data is None:
-        plan_data = build_heuristic_plan(db, student, diagnosis)
+        plan_data = build_heuristic_plan(db, student, diagnosis, policy=policy)
 
     plan = LearningPlan(
         student_id=student.id,

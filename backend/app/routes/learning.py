@@ -318,6 +318,50 @@ def update_objective(
 
 
 # ---------------------------------------------------------------------------
+# Phase 3 (PRD §94): policy, adaptive path, cross-textbook mapping
+# ---------------------------------------------------------------------------
+
+@router.get("/policy/{student_id}")
+def policy(
+    student_id: int,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Student-specific learning policy learned from intervention outcomes."""
+    ensure_can_access_student(current, student_id)
+    _get_student(db, student_id)
+    from app.services.policy import learning_policy
+
+    return learning_policy(db, student_id)
+
+
+@router.get("/learning-path/{student_id}")
+def learning_path_route(
+    student_id: int,
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Computed long-term learning path with velocity-based estimates (§94)."""
+    ensure_can_access_student(current, student_id)
+    _get_student(db, student_id)
+    from app.services.policy import learning_path
+
+    return learning_path(db, student_id)
+
+
+@router.get("/knowledge-map")
+def knowledge_map_route(
+    current: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Cross-textbook knowledge point mapping (§94)."""
+    _teacher_only(current)
+    from app.services.policy import knowledge_map
+
+    return knowledge_map(db)
+
+
+# ---------------------------------------------------------------------------
 # Diagnosis (PRD §29)
 # ---------------------------------------------------------------------------
 

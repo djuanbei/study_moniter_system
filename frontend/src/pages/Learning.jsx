@@ -38,6 +38,8 @@ export default function Learning() {
   const [plans, setPlans] = useState([])
   const [report, setReport] = useState(null)
   const [kbCandidates, setKbCandidates] = useState([])
+  const [policy, setPolicy] = useState(null)
+  const [path, setPath] = useState(null)
   const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState('')
   const [error, setError] = useState('')
@@ -70,9 +72,12 @@ export default function Learning() {
       endpoints.learningPlans(studentId),
       endpoints.learningReport(studentId, 7).catch(() => null),
       endpoints.knowledgeCandidates('pending').catch(() => []),
+      endpoints.learningPolicy(studentId).catch(() => null),
+      endpoints.learningPath(studentId).catch(() => null),
     ])
-      .then(([st, ob, dg, pl, rp, kb]) => {
-        setStates(st); setObjectives(ob); setDiagnosis(dg); setPlans(pl); setReport(rp); setKbCandidates(kb)
+      .then(([st, ob, dg, pl, rp, kb, po, pa]) => {
+        setStates(st); setObjectives(ob); setDiagnosis(dg); setPlans(pl)
+        setReport(rp); setKbCandidates(kb); setPolicy(po); setPath(pa)
       })
       .catch((e) => setError(e.message))
   }, [studentId])
@@ -325,6 +330,44 @@ export default function Learning() {
                   ))}
                 </tbody>
               </table>
+            )}
+          </Card>
+
+          <Card title="学习策略与长期路径（AI 自适应，PRD §94）">
+            {!policy ? <Empty>暂无数据</Empty> : (
+              <div className="grid grid-2">
+                <div>
+                  <div className="muted" style={{ fontSize: 12 }}>学习策略（基于干预效果）</div>
+                  {policy.personalized
+                    ? <div>个性化策略 <span className="badge badge-success">基于 {policy.outcomes_used} 次干预</span></div>
+                    : <div className="muted">数据积累中（{policy.outcomes_used}/{3} 次干预），暂用默认策略</div>}
+                  {(policy.preferred_interventions || []).slice(0, 4).map((t, i) => (
+                    <div key={t} className="mt-1">
+                      {i + 1}. {INTERVENTION_LABELS[t] || t}
+                      <span className="badge badge-neutral" style={{ marginLeft: 6 }}>
+                        效果 {policy.effectiveness_incl_priors?.[t] != null ? `+${Math.round((policy.effectiveness_incl_priors[t] || 0) * 100)}%` : '—'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <div className="muted" style={{ fontSize: 12 }}>长期路径（速度 {path ? Math.round(path.velocity_per_week * 100) : '—'}%/周）</div>
+                  {path && Object.entries(path.phases).map(([phase, items]) => (
+                    <div key={phase} className="mt-1">
+                      <span className={'badge ' + (phase === 'behind' ? 'badge-warn' : phase === 'mastered' ? 'badge-success' : 'badge-primary')}>
+                        {phase === 'behind' ? '待补基础' : phase === 'current' ? '当前推进' : phase === 'review' ? '防遗忘复习' : '已掌握'}
+                      </span>
+                      {' '}{items.length} 个知识点
+                    </div>
+                  ))}
+                  {path?.estimates && (
+                    <div className="muted mt-2" style={{ fontSize: 12 }}>
+                      预计 {path.estimates.weeks_to_catch_up_behind} 周补齐基础，
+                      {path.estimates.weeks_to_reach_current_target} 周达成当前目标
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </Card>
 
