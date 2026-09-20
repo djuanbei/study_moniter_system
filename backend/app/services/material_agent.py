@@ -15,9 +15,11 @@ agent reports itself disabled instead of failing.
 from __future__ import annotations
 
 import hashlib
-import json
+import ipaddress
 import logging
 import os
+import re
+import socket
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -31,6 +33,60 @@ from app.models.materials import Material, MaterialCandidate
 from app.models.students import Chapter
 
 logger = logging.getLogger(__name__)
+
+_CONTENT_TYPE_EXT = {
+    "application/pdf": "pdf",
+    "text/plain": "txt",
+    "text/html": "txt",
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+}
+
+
+_LOCAL_NAMES = re.compile(r"^(localhost|.*\.local|.*\.internal|.*\.lan)$", re.IGNORECASE)
+
+
+def _validate_public_url(url: str, resolve_hostnames: bool = True) -> bool:
+    """SSRF guard (approve fetches server-side): only public http(s) hosts.
+
+    Rejects non-http(s) schemes, local-looking names, and any host that
+    resolves to private/loopback/link-local/reserved/multicast addresses.
+    With resolve_hostnames=False only cheap checks run (used while scanning;
+    approve always fully resolves).
+    """
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        return False
+    host = parsed.hostname
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        ip = None
+    if ip is not None:
+        return not (
+            ip.is_private or ip.is_loopback or ip.is_link_local
+            or ip.is_reserved or ip.is_multicast or ip.is_unspecified
+        )
+    if _LOCAL_NAMES.match(host):
+        return False
+    if not resolve_hostnames:
+        return True
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except socket.gaierror:
+        return False  # unresolvable hosts cannot be fetched either
+    for info in infos:
+        try:
+            addr = ipaddress.ip_address(info[4][0])
+        except ValueError:
+            return False
+        if (
+            addr.is_private or addr.is_loopback or addr.is_link_local
+            or addr.is_reserved or addr.is_multicast or addr.is_unspecified
+        ):
+            return False
+    return True
 
 
 @dataclass
@@ -127,10 +183,12 @@ def discover_materials(db: Session, *, user=None) -> dict:
     queries = build_queries(db)
     created = 0
     duplicates = 0
+    scanned = 0
     now = datetime.utcnow()
     seen_hashes: set[str] = set()
+    stop = False
     for entry in queries:
-        if created + duplicates >= max_new:
+        if stop:
             break
         try:
             results = search(entry["query"])
@@ -138,7 +196,12 @@ def discover_materials(db: Session, *, user=None) -> dict:
             logger.warning("material agent search failed for %r: %s", entry["query"], exc)
             continue
         for disc in results:
-            if created + duplicates >= max_new:
+            scanned += 1
+            if scanned >= max_new * 5:  # hard guard against unbounded corpora
+                stop = True
+                break
+            if created >= max_new:
+                stop = True
                 break
             content_hash = hashlib.sha256(disc.url.encode("utf-8")).hexdigest()
             if content_hash in seen_hashes:
@@ -152,6 +215,9 @@ def discover_materials(db: Session, *, user=None) -> dict:
             if exists:
                 seen_hashes.add(content_hash)
                 duplicates += 1
+                continue
+            if not _validate_public_url(disc.url, resolve_hostnames=False):
+                duplicates += 1  # non-public hosts are skipped entirely
                 continue
             db.add(
                 MaterialCandidate(
@@ -192,18 +258,27 @@ def approve_candidate(db: Session, candidate: MaterialCandidate, user=None) -> M
     """
     if candidate.status != "discovered":
         raise ValueError("该候选已处理")
+    if not _validate_public_url(candidate.url):
+        # full validation incl. DNS resolution (SSRF guard)
+        raise ValueError("URL 指向非公开或不可解析地址，已拒绝抓取")
     resp = httpx.get(candidate.url, timeout=20, follow_redirects=True,
                      headers={"User-Agent": "LearningCompanion/0.1"})
     resp.raise_for_status()
-    content_type = resp.headers.get("content-type", "text/html")
-    if "html" in content_type or "text/plain" in content_type:
+    content_type = resp.headers.get("content-type", "text/html").split(";")[0].strip().lower()
+    if content_type in ("text/html", "text/plain") or content_type.startswith("text/"):
         text = _strip_html(resp.text)[:50000]
         ext = "txt"
         mime = "text/plain"
     else:
         text = None
-        ext = (candidate.url.rsplit(".", 1)[-1] or "bin")[:8]
-        mime = content_type.split(";")[0]
+        # Extension comes from the URL *path* (not the whole URL — the last
+        # dot is usually in the domain), falling back to content-type.
+        path_ext = os.path.splitext(urlparse(candidate.url).path)[1].lstrip(".").lower()
+        if re.fullmatch(r"[a-z0-9]{1,8}", path_ext):
+            ext = path_ext
+        else:
+            ext = _CONTENT_TYPE_EXT.get(content_type, "bin")
+        mime = content_type or "application/octet-stream"
 
     raw = resp.content
     sha = hashlib.sha256(raw).hexdigest()
