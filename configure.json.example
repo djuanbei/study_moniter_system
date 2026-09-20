@@ -26,6 +26,25 @@
       "auto_publish": false
     }
   },
+  "material_agent": {
+    "enabled": true,
+    "schedule": "weekly",
+    "max_candidates_per_run": 50,
+    "auto_import": false,
+    "search": {
+      "provider": "http_json",
+      "endpoint": "",
+      "query_param": "q",
+      "result_path": "results",
+      "api_key_env": "",
+      "fields": {
+        "title": "title",
+        "url": "url",
+        "snippet": "snippet",
+        "license": "license"
+      }
+    }
+  },
   "academic": {
     "school_year_start_month": 9,
     "timezone": "Asia/Shanghai",

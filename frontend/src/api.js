@@ -178,6 +178,13 @@ export const endpoints = {
   materialFileUrl: (id) => `/api/materials/${id}/file`,
   deleteMaterial: (id) => api.del(`/materials/${id}`),
 
+  agentStatus: () => api.get('/material-agent/status'),
+  agentRun: () => api.post('/material-agent/run'),
+  agentCandidates: (status = 'discovered') =>
+    api.get(`/material-agent/candidates?status=${status}`),
+  agentApprove: (id) => api.post(`/material-agent/candidates/${id}/approve`),
+  agentReject: (id) => api.post(`/material-agent/candidates/${id}/reject`),
+
   analyzeHistory: (data) => api.post('/historical/analyze', data),
   historyList: (studentId) => api.get(`/historical?student_id=${studentId}`),
   historyDetail: (id) => api.get(`/historical/${id}`),

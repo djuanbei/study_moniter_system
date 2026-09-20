@@ -156,6 +156,14 @@ def run_knowledge_update(db: Session, payload: dict, user_id: Optional[int]) -> 
     )
 
 
+@register("MATERIAL_DISCOVERY")
+def run_material_discovery(db: Session, payload: dict, user_id: Optional[int]) -> dict:
+    """§22: one agent discovery pass; candidates wait for parent approval."""
+    from app.services.material_agent import discover_materials
+
+    return discover_materials(db)
+
+
 # ---------------------------------------------------------------------------
 # Claim / run loop
 # ---------------------------------------------------------------------------

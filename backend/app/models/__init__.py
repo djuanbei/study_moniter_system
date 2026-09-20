@@ -31,7 +31,7 @@ from app.models.learning import (
     StudentKnowledgeState,
     StudentKnowledgeStateHistory,
 )
-from app.models.materials import Material
+from app.models.materials import Material, MaterialCandidate
 from app.models.historical import HistoricalAssessment, HistoricalQuestion
 from app.models.exams import Exam, ExamAttempt
 from app.models.question_bank import BankUpdateCandidate, QuestionBankItem, QuestionVersion
@@ -99,6 +99,7 @@ __all__ = [
     "InterventionOutcome",
     "KnowledgeUpdateCandidate",
     "Material",
+    "MaterialCandidate",
     "HistoricalAssessment",
     "HistoricalQuestion",
     "Exam",

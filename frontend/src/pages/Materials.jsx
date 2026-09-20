@@ -23,6 +23,8 @@ const STATUS_BADGES = {
 
 export default function Materials() {
   const [materials, setMaterials] = useState([])
+  const [agentStatus, setAgentStatus] = useState(null)
+  const [agentCandidates, setAgentCandidates] = useState([])
   const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState('')
   const [error, setError] = useState('')
@@ -38,6 +40,8 @@ export default function Materials() {
 
   function load() {
     endpoints.materials().then(setMaterials).catch((e) => setError(e.message))
+    endpoints.agentStatus().then(setAgentStatus).catch(() => {})
+    endpoints.agentCandidates().then(setAgentCandidates).catch(() => {})
   }
   useEffect(() => { load() }, [])
 
@@ -52,6 +56,15 @@ export default function Materials() {
     } finally {
       setBusy('')
     }
+  }
+
+  async function runAgent() {
+    await run(async () => {
+      const result = await runJob('MATERIAL_DISCOVERY', {}, { timeoutMs: 180000 })
+      if (result.result?.no_provider) {
+        throw new Error(result.result.message)
+      }
+    }, '发现完成，请审核下方候选（不会自动入库）')
   }
 
   async function upload() {
@@ -93,6 +106,56 @@ export default function Materials() {
         <div className="muted" style={{ fontSize: 12 }}>
           上传后运行「识别」：OCR → AI 提取章节与知识点 → 家长确认后发布到章节管理，供出题与学习规划使用。
         </div>
+      </Card>
+
+      <Card
+        title="资料发现 Agent（PRD §22）"
+        actions={
+          <div className="row" style={{ gap: 8 }}>
+            {agentStatus && (
+              <span className={'badge ' + (agentStatus.provider_configured ? 'badge-success' : 'badge-neutral')}>
+                {agentStatus.provider_configured ? '搜索源已配置' : '未配置搜索源'}
+              </span>
+            )}
+            <button className="btn" disabled={!!busy}
+                    onClick={runAgent}>
+              运行发现
+            </button>
+          </div>
+        }
+      >
+        <div className="muted mb-2" style={{ fontSize: 12 }}>
+          Agent 根据章节与知识点搜索公开练习资料（每周自动，§87）。候选需家长确认后才会抓取入库；
+          记录 URL、域名、抓取时间、内容哈希与许可（§23），不自动再分发第三方内容。
+        </div>
+        {agentCandidates.length === 0 ? <Empty>暂无候选</Empty> : (
+          <table className="table">
+            <thead><tr><th>标题</th><th>来源</th><th>知识点</th><th>许可</th><th></th></tr></thead>
+            <tbody>
+              {agentCandidates.map((c) => (
+                <tr key={c.id}>
+                  <td style={{ maxWidth: 320 }}>
+                    <a href={c.url} target="_blank" rel="noreferrer">{c.title}</a>
+                    {c.snippet && <div className="muted" style={{ fontSize: 12 }}>{c.snippet.slice(0, 100)}…</div>}
+                  </td>
+                  <td className="muted">{c.domain}</td>
+                  <td className="muted">{c.knowledge_point || '—'}</td>
+                  <td><span className="badge badge-neutral">{c.license}</span></td>
+                  <td className="right" style={{ whiteSpace: 'nowrap' }}>
+                    <button className="btn btn-primary" style={{ marginRight: 6 }} disabled={!!busy}
+                            onClick={() => run(() => endpoints.agentApprove(c.id), '已抓取入库（来源已记录）')}>
+                      确认入库
+                    </button>
+                    <button className="btn-ghost" disabled={!!busy}
+                            onClick={() => run(() => endpoints.agentReject(c.id), '已拒绝')}>
+                      拒绝
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </Card>
 
       <Card title={`资料库（${materials.length}）`}>
