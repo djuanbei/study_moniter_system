@@ -520,6 +520,23 @@ class ExamConfirmIn(BaseModel):
     per_question: Optional[dict[str, Any]] = None
 
 
+# --- Knowledge-base update (PRD §69) ---
+
+class KnowledgeCandidateOut(BaseModel):
+    id: int
+    candidate_type: str
+    target_kp_id: Optional[int]
+    payload: dict[str, Any]
+    rationale: Optional[str]
+    status: str
+    review_note: Optional[str]
+    model_config = ConfigDict(from_attributes=True)
+
+
+class KnowledgeRejectIn(BaseModel):
+    note: Optional[str] = None
+
+
 # --- Settings ---
 
 class SettingsOut(BaseModel):

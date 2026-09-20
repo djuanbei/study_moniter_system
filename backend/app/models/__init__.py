@@ -22,6 +22,7 @@ from app.models.assignments import (
 from app.models.learning import (
     InterventionOutcome,
     KnowledgePoint,
+    KnowledgeUpdateCandidate,
     LearningEvidence,
     LearningObjective,
     LearningPlan,
@@ -96,6 +97,7 @@ __all__ = [
     "LearningPlan",
     "LearningPlanItem",
     "InterventionOutcome",
+    "KnowledgeUpdateCandidate",
     "Material",
     "HistoricalAssessment",
     "HistoricalQuestion",

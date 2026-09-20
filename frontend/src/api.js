@@ -220,6 +220,12 @@ export const endpoints = {
   bankApproveCandidate: (id) => api.post(`/question-bank/updates/candidates/${id}/approve`),
   bankRejectCandidate: (id, note) => api.post(`/question-bank/updates/candidates/${id}/reject`, { note }),
 
+  knowledgeUpdateAnalysis: () => api.get('/knowledge-updates/analysis'),
+  knowledgeCandidates: (status = 'pending') =>
+    api.get(`/knowledge-updates/candidates?status=${status}`),
+  knowledgeApprove: (id) => api.post(`/knowledge-updates/candidates/${id}/approve`),
+  knowledgeReject: (id, note) => api.post(`/knowledge-updates/candidates/${id}/reject`, { note }),
+
   exportCsv: (id) => api.get(`/archive/students/${id}/csv`),
   exportPdf: (id) => api.get(`/archive/students/${id}/pdf`),
   exportImagesZip: (id) => api.get(`/archive/students/${id}/images.zip`),

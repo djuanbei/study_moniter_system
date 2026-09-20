@@ -296,3 +296,25 @@ class InterventionOutcome(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False), nullable=False, index=True
     )
+
+
+class KnowledgeUpdateCandidate(Base, TimestampMixin):
+    """PRD §69 — knowledge-base change awaiting parent review.
+
+    candidate_type: ADD | MODIFY | MERGE | SPLIT | DEPRECATE (§69).
+    """
+
+    __tablename__ = "knowledge_update_candidates"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    candidate_type: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    target_kp_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("knowledge_points.id", ondelete="SET NULL")
+    )
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    rationale: Mapped[Optional[str]] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(16), default="pending", nullable=False, index=True)
+    reviewed_by: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    review_note: Mapped[Optional[str]] = mapped_column(String(255))

@@ -27,6 +27,8 @@ const INTERVENTION_LABELS = {
   REFLECTION: '反思',
 }
 
+const KB_TYPE_LABELS = { ADD: '新增', MODIFY: '修改', MERGE: '合并', SPLIT: '拆分', DEPRECATE: '废弃' }
+
 export default function Learning() {
   const [students, setStudents] = useState([])
   const [studentId, setStudentId] = useState(null)
@@ -35,6 +37,7 @@ export default function Learning() {
   const [diagnosis, setDiagnosis] = useState(null)
   const [plans, setPlans] = useState([])
   const [report, setReport] = useState(null)
+  const [kbCandidates, setKbCandidates] = useState([])
   const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState('')
   const [error, setError] = useState('')
@@ -66,9 +69,10 @@ export default function Learning() {
       endpoints.diagnosis(studentId),
       endpoints.learningPlans(studentId),
       endpoints.learningReport(studentId, 7).catch(() => null),
+      endpoints.knowledgeCandidates('pending').catch(() => []),
     ])
-      .then(([st, ob, dg, pl, rp]) => {
-        setStates(st); setObjectives(ob); setDiagnosis(dg); setPlans(pl); setReport(rp)
+      .then(([st, ob, dg, pl, rp, kb]) => {
+        setStates(st); setObjectives(ob); setDiagnosis(dg); setPlans(pl); setReport(rp); setKbCandidates(kb)
       })
       .catch((e) => setError(e.message))
   }, [studentId])
@@ -178,8 +182,14 @@ export default function Learning() {
                   生成 AI 学习计划
                 </button>
                 <button className="btn" disabled={!!busy}
-                        onClick={() => run(() => endpoints.syncKnowledgePoints(), '知识点已同步')}>
+                        onClick={() => run(
+                          () => runJob('KNOWLEDGE_UPDATE', {}, { timeoutMs: 120000 }),
+                          '知识库分析完成，请在下方审核候选')}>
                   同步知识点
+                </button>
+                <button className="btn" disabled={!!busy}
+                        onClick={() => run(() => endpoints.syncKnowledgePoints(), '章节知识点已同步')}>
+                  章节同步
                 </button>
               </div>
             }
@@ -278,6 +288,43 @@ export default function Learning() {
                   )}
                 </div>
               </div>
+            )}
+          </Card>
+
+          <Card title="知识库更新（AI 维护，PRD §69）">
+            {kbCandidates.length === 0 ? (
+              <Empty>暂无待审核候选 — 点击「同步知识点」运行分析</Empty>
+            ) : (
+              <table className="table">
+                <thead><tr><th>类型</th><th>内容</th><th>依据</th><th></th></tr></thead>
+                <tbody>
+                  {kbCandidates.map((c) => (
+                    <tr key={c.id}>
+                      <td><span className={'badge ' + (c.candidate_type === 'ADD' ? 'badge-primary' : 'badge-warn')}>
+                        {KB_TYPE_LABELS[c.candidate_type] || c.candidate_type}
+                      </span></td>
+                      <td style={{ maxWidth: 340 }}>
+                        {c.candidate_type === 'ADD' && <b>{c.payload.name}</b>}
+                        {c.candidate_type === 'MERGE' && (
+                          <span>{(c.payload.merge || []).join('、')} → <b>{c.payload.keep}</b></span>
+                        )}
+                        {c.candidate_type === 'DEPRECATE' && <span>废弃未使用知识点</span>}
+                      </td>
+                      <td className="muted" style={{ fontSize: 12, maxWidth: 240 }}>{c.rationale}</td>
+                      <td className="right" style={{ whiteSpace: 'nowrap' }}>
+                        <button className="btn btn-primary" style={{ marginRight: 6 }} disabled={!!busy}
+                                onClick={() => run(() => endpoints.knowledgeApprove(c.id), '已应用到知识库')}>
+                          确认
+                        </button>
+                        <button className="btn-ghost" disabled={!!busy}
+                                onClick={() => run(() => endpoints.knowledgeReject(c.id), '已拒绝')}>
+                          拒绝
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </Card>
 

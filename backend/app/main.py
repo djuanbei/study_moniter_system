@@ -47,6 +47,7 @@ from app.routes import (
     grading,
     historical,
     jobs,
+    knowledge_updates,
     learning,
     materials,
     questions,
@@ -125,6 +126,7 @@ app.include_router(historical.router)
 app.include_router(jobs.router)
 app.include_router(exams.router)
 app.include_router(question_bank.router)
+app.include_router(knowledge_updates.router)
 app.include_router(archive.router)
 app.include_router(settings_router.router)
 app.include_router(dashboard.router)

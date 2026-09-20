@@ -146,6 +146,16 @@ def run_bank_update(db: Session, payload: dict, user_id: Optional[int]) -> dict:
     )
 
 
+@register("KNOWLEDGE_UPDATE")
+def run_knowledge_update(db: Session, payload: dict, user_id: Optional[int]) -> dict:
+    """§69: knowledge-base analysis + candidates; parent reviews before apply."""
+    from app.services.knowledge_update import generate_knowledge_candidates
+
+    return generate_knowledge_candidates(
+        db, batch_size=int(payload.get("batch_size", 20))
+    )
+
+
 # ---------------------------------------------------------------------------
 # Claim / run loop
 # ---------------------------------------------------------------------------
