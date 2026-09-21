@@ -163,6 +163,7 @@ class GenerateIn(BaseModel):
     student_id: int
     question_count: int = Field(default=6, ge=1, le=30)
     difficulty: str = Field(default="medium", pattern="^(easy|medium|hard)$")
+    semester: Optional[int] = Field(default=None, ge=1, le=2)
     knowledge_points: list[str] = []
     question_types: list[str] = []
     due_date: Optional[datetime] = None
