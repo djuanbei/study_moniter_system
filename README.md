@@ -87,7 +87,30 @@ configure.json.example
 ## Deployment
 
 - `docker-compose.yml` — production-style multi-process setup
-- `systemd/study-moniter.service` — example systemd unit
+- `systemd/study-moniter.service` — systemd unit (path templated, rendered by `scripts/deploy.sh`)
+- `deploy/nginx.conf` — reverse-proxy config (uploads, WebSocket, security headers)
+- `scripts/deploy.sh` — one-shot installer: systemd + nginx + (optional) Let's Encrypt + smoke test
+
+### Production deploy on a fresh Linux box
+
+```bash
+git clone <repo> /opt/study-moniter-system && cd /opt/study-moniter-system
+./install.sh                          # venv + deps + migrations + default teacher + frontend build
+sudo scripts/deploy.sh                # systemd + nginx (HTTP only)
+sudo scripts/deploy.sh learning.example.com   # systemd + nginx + Let's Encrypt
+```
+
+Then open the URL shown in the deploy script output and log in with username `yun` and the `PASS_WORD` you set during `install.sh`.
+
+### Maintenance
+
+```bash
+sudo systemctl status study-moniter    # backend status
+sudo systemctl restart study-moniter
+sudo journalctl -u study-moniter -f    # live backend logs
+sudo nginx -t && sudo systemctl reload nginx
+./scripts/backup.sh                    # DB + uploads snapshot
+```
 
 ## Default Credentials
 

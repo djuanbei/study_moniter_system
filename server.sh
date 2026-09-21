@@ -46,14 +46,17 @@ start() {
     echo "already running (pid $(cat "$PID_FILE")) — use ./server.sh restart to reload"
     return 0
   fi
-  mkdir -p "$ROOT/logs" "$ROOT/data"
+  mkdir -p "$ROOT/logs" "$BACKEND/logs" "$ROOT/data"
   read -r HOST PORT <<<"$(read_bind)"
   HHOST="$(health_host "$HOST")"
   echo "starting uvicorn on ${HOST}:${PORT} (${WORKERS} workers) ..."
-  nohup "$PYTHON" -m uvicorn app.main:app \
-    --host "$HOST" --port "$PORT" --workers "$WORKERS" \
-    >>"$LOG_FILE" 2>&1 &
-  echo $! > "$PID_FILE"
+  (
+    cd "$BACKEND"
+    nohup "$PYTHON" -m uvicorn --app-dir "$BACKEND" app.main:app \
+      --host "$HOST" --port "$PORT" --workers "$WORKERS" \
+      >>"$LOG_FILE" 2>&1 &
+    echo $! > "$PID_FILE"
+  )
 
   i=0
   while [ "$i" -lt "$HEALTH_TIMEOUT" ]; do
@@ -103,13 +106,34 @@ status() {
   fi
 }
 
+health() {
+  if ! is_running; then
+    echo "stopped"
+    return 1
+  fi
+  read -r HOST PORT <<<"$(read_bind)"
+  HHOST="$(health_host "$HOST")"
+  body="$(curl -fsS "http://${HHOST}:${PORT}/api/health" 2>/dev/null || echo '{}')"
+  echo "$body"
+}
+
+logs() {
+  if [ -f "$LOG_FILE" ]; then
+    tail -n "${1:-50}" -f "$LOG_FILE"
+  else
+    echo "no log file at $LOG_FILE"
+  fi
+}
+
 case "${1:-}" in
   start) start ;;
   stop) stop ;;
   restart) stop; start ;;
   status) status ;;
+  health) health ;;
+  logs) logs "${2:-50}" ;;
   *)
-    echo "Usage: $0 {start|stop|restart|status}" >&2
+    echo "Usage: $0 {start|stop|restart|status|health|logs [N]}" >&2
     exit 2
     ;;
 esac
