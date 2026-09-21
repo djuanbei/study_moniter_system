@@ -48,7 +48,8 @@ step "Preflight"
 [ -d "$BACKEND_DIR/.venv" ] || die "backend/.venv not found — run ./install.sh first"
 [ -f "$PROJECT_ROOT/.env" ] || die ".env not found — run ./install.sh first"
 [ -f "$BACKEND_DIR/alembic.ini" ] || die "alembic.ini missing — repo incomplete"
-[ -f "$PROJECT_ROOT/deploy/nginx.conf" ] || die "deploy/nginx.conf missing"
+[ -f "$PROJECT_ROOT/deploy/nginx-upstream.conf" ] || die "deploy/nginx-upstream.conf missing"
+[ -f "$PROJECT_ROOT/deploy/nginx-server.conf" ] || die "deploy/nginx-server.conf missing"
 
 # --- 1. systemd --------------------------------------------------------------
 
@@ -103,12 +104,28 @@ if ! command -v nginx >/dev/null 2>&1; then
   fi
 fi
 
-install -m 0644 "$PROJECT_ROOT/deploy/nginx.conf" "$NGINX_SITE"
+# Two-file layout (matches nginx convention):
+#   - conf.d/study-moniter-upstream.conf  : map + upstream  (must live at http level)
+#   - sites-available/study-moniter        : server block (included by http)
+NGINX_CONF_D="/etc/nginx/conf.d"
+NGINX_UPSTREAM="$NGINX_CONF_D/study-moniter-upstream.conf"
+install -m 0644 "$PROJECT_ROOT/deploy/nginx-upstream.conf" "$NGINX_UPSTREAM"
+
+install -m 0644 "$PROJECT_ROOT/deploy/nginx-server.conf" "$NGINX_SITE"
 
 # Enable the site, disable the default server block.
 SITES_ENABLED="$(dirname "$NGINX_SITE")/../sites-enabled/study-moniter"
 mkdir -p "$(dirname "$SITES_ENABLED")"
 ln -sf "$NGINX_SITE" "$SITES_ENABLED"
+# Remove any prior bad install that put the server block at sites-enabled
+# (would have failed nginx -t on the upstream-inside-server directive).
+if [ -f /etc/nginx/sites-enabled/study-moniter ]; then
+  if grep -q '^upstream ' /etc/nginx/sites-enabled/study-moniter 2>/dev/null; then
+    warn "removing broken prior install at $SITES_ENABLED"
+    rm -f /etc/nginx/sites-enabled/study-moniter
+    ln -sf "$NGINX_SITE" "$SITES_ENABLED"
+  fi
+fi
 if [ -f /etc/nginx/sites-enabled/default ]; then
   rm -f /etc/nginx/sites-enabled/default
 fi
