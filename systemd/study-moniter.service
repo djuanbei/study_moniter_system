@@ -5,9 +5,9 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/study-moniter-system
+WorkingDirectory=/opt/study-moniter-system/backend
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/opt/study-moniter-system/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+ExecStart=/opt/study-moniter-system/backend/.venv/bin/uvicorn --app-dir /opt/study-moniter-system/backend app.main:app --host 0.0.0.0 --port 8000 --workers 2
 Restart=on-failure
 RestartSec=5
 User=study-moniter

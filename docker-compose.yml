@@ -38,8 +38,8 @@ services:
           echo '[bootstrap] Generated initial PASS_WORD (printed once below):'
           echo \"            PASS_WORD=\$PW\"
         fi &&
-        .venv/bin/python -c 'from app.routes._helpers import ensure_default_teacher_exists; from app.config import get_settings; from app.database import SessionLocal; db=SessionLocal(); ensure_default_teacher_exists(db, get_settings()); db.close()' &&
-        .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+        cd backend && .venv/bin/python -c 'from app.routes._helpers import ensure_default_teacher_exists; from app.config import get_settings; from app.database import SessionLocal; db=SessionLocal(); ensure_default_teacher_exists(db, get_settings()); db.close()' &&
+        .venv/bin/uvicorn --app-dir backend app.main:app --host 0.0.0.0 --port 8000 --workers 2
       "
     restart: unless-stopped
     healthcheck:

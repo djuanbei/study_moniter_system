@@ -260,7 +260,22 @@ fi
 if [ ! -d "node_modules" ]; then
   npm install --no-audit --no-fund --prefer-offline
 fi
-npm run build
+# npm >= 11 sometimes writes wrapper scripts instead of symlinks in node_modules/.bin
+# (regression in npm 11.x). Vite 5's bin/vite.js uses an import path that only
+# resolves correctly when the entry is a real symlink; the wrapper script points
+# to a non-existent node_modules/dist/node/cli.js. Fall back to invoking the
+# package's bin script directly via node when the .bin entry is not a symlink.
+run_vite_build() {
+  if [ -L "node_modules/.bin/vite" ] || [ -f "node_modules/vite/bin/vite.js" ]; then
+    npm run build && return 0
+  fi
+  if [ -f "node_modules/vite/bin/vite.js" ]; then
+    warn "Detected npm 11+ wrapper-script bug; invoking vite via node directly."
+    node node_modules/vite/bin/vite.js build && return 0
+  fi
+  die "vite not installed (no node_modules/vite)"
+}
+run_vite_build
 echo "Frontend built to $FRONTEND_DIR/dist"
 
 # --- Runtime directories -----------------------------------------------------
@@ -277,16 +292,27 @@ chmod 700 "$PROJECT_ROOT/data" 2>/dev/null || warn "Could not chmod 700 data/"
 CFG_HOST="0.0.0.0"
 CFG_PORT="8000"
 if command -v python3 >/dev/null 2>&1 && [ -f "$PROJECT_ROOT/configure.json" ]; then
-  eval "$(python3 -c "
-import json, os
+  # Capture python's stdout via a temp file so quotes inside the python
+  # string don't terminate the surrounding shell token (the previous
+  # `eval "$(...)"` form tripped on the literal `(` in `web.get(...)`).
+  cfg_tmp="$(mktemp "${PROJECT_ROOT}/.cfg.XXXXXX")"
+  chmod 600 "$cfg_tmp"
+  CFG_PATH="$PROJECT_ROOT/configure.json" python3 - "$cfg_tmp" <<'PY' 2>/dev/null || true
+import json, os, sys
+out = sys.argv[1]
 try:
-    cfg = json.load(open(os.environ.get('CFG_PATH', '')))
+    cfg = json.load(open(os.environ.get("CFG_PATH", "")))
 except Exception:
     cfg = {}
-web = cfg.get('web') or {}
-print(f\"CFG_HOST={web.get('host', '0.0.0.0')}\")
-print(f\"CFG_PORT={web.get('port', 8000)}\")
-" CFG_PATH="$PROJECT_ROOT/configure.json" 2>/dev/null)" || true
+web = cfg.get("web") or {}
+with open(out, "w") as fh:
+    fh.write(f'CFG_HOST={web.get("host", "0.0.0.0")}\n')
+    fh.write(f'CFG_PORT={web.get("port", 8000)}\n')
+PY
+  if [ -s "$cfg_tmp" ]; then
+    . "$cfg_tmp"
+  fi
+  rm -f "$cfg_tmp"
 fi
 
 step "Installation complete"
