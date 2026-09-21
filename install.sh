@@ -115,15 +115,47 @@ fi
 step "Creating Python virtual environment"
 cd "$BACKEND_DIR"
 if [ ! -d ".venv" ]; then
-  uv venv .venv --python 3.11
+  uv venv .venv --python 3.11 || die "uv venv failed (need Python 3.11+)"
 fi
+# Make sure Python 3.11 is actually installed (uv downloads on demand).
+uv python install 3.11 2>/dev/null || warn "Could not pre-install Python 3.11 via uv"
 
 step "Installing Python dependencies"
 # Honor a custom PyPI mirror if set (e.g. UV_INDEX_URL=https://mirrors.tencent.com/pypi/simple/).
 if [ -n "${UV_INDEX_URL:-}" ]; then
   echo "Using PyPI mirror: $UV_INDEX_URL"
 fi
-uv pip install --python .venv/bin/python -e . 2>&1 | tail -5
+
+# Prefer `uv sync --frozen` so the locked versions in backend/uv.lock win.
+# Falls back to `uv pip install -e .` for editable installs when uv.lock is missing.
+if [ -f "$BACKEND_DIR/uv.lock" ]; then
+  echo "Using backend/uv.lock (reproducible install)"
+  if uv sync --frozen --python "$BACKEND_DIR/.venv/bin/python" 2>&1 | tail -20; then :; else
+    die "uv sync failed. Check the output above; common causes are network/PyPI issues or a stale uv.lock."
+  fi
+else
+  warn "backend/uv.lock not found — falling back to loose pip install"
+  if uv pip install --python "$BACKEND_DIR/.venv/bin/python" -e "$BACKEND_DIR" 2>&1 | tail -20; then :; else
+    die "uv pip install failed. Check the output above."
+  fi
+fi
+
+# Always install the dev extras (pytest, ruff) so users can run tests locally.
+uv pip install --python "$BACKEND_DIR/.venv/bin/python" -e "$BACKEND_DIR[dev]" 2>&1 | tail -5 || warn "dev extras install failed (non-fatal)"
+
+step "Verifying critical imports"
+verify_imports=0
+if ! "$BACKEND_DIR/.venv/bin/python" -c "import fastapi, uvicorn, sqlalchemy, alembic, pydantic, langchain_core, PIL, reportlab, docx; print('  fastapi', fastapi.__version__); print('  uvicorn', uvicorn.__version__); print('  sqlalchemy', sqlalchemy.__version__)" 2>&1; then
+  verify_imports=1
+fi
+if [ "$verify_imports" -ne 0 ]; then
+  die "Critical imports failed — the virtualenv is incomplete. Re-run install.sh or check uv output above."
+fi
+echo "  all critical imports OK"
+
+# Make sure the runtime log dirs exist for uvicorn out-of-the-box.
+mkdir -p "$BACKEND_DIR/logs" "$PROJECT_ROOT/data" "$PROJECT_ROOT/uploads" "$PROJECT_ROOT/logs"
+echo "  log/data/upload dirs ready"
 
 # --- .env --------------------------------------------------------------------
 
