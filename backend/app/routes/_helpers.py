@@ -161,19 +161,36 @@ def get_allowed_mime_table(defaults: dict[str, str]) -> dict[str, str]:
     """Honour ``app.allowed_image_types`` when present.
 
     ``configure.json`` lists extensions (jpg/jpeg/png/webp/pdf). We map each
-    extension to its canonical MIME type. Extensions not in the defaults
-    table are ignored.
+    extension to its canonical MIME type. Synonyms that are not in the
+    defaults table (e.g. ``jpeg`` is a common alias for ``jpg``) are
+    resolved through a fixed alias table.
     """
     cfg_exts = (get_business_config().get("app") or {}).get("allowed_image_types")
     if not cfg_exts:
         return defaults
+    # Canonical ext → list of equivalent extensions that map to the same MIME.
+    ext_synonyms: dict[str, tuple[str, ...]] = {
+        "jpg": ("jpeg",),
+        "jpeg": ("jpg",),
+    }
+    # Resolve each cfg ext to a canonical ext present in defaults.
     ext_to_mime = {v: k for k, v in defaults.items()}
     out: dict[str, str] = {}
-    for ext in cfg_exts:
-        ext = str(ext).lower().lstrip(".")
-        mime = ext_to_mime.get(ext)
-        if mime:
-            out[mime] = defaults[mime]
+    for raw_ext in cfg_exts:
+        ext = str(raw_ext).lower().lstrip(".")
+        # If ext is itself a key in defaults (most common case), use it.
+        canonical = ext if ext in ext_to_mime else None
+        if canonical is None:
+            # Try synonyms of known canonicals.
+            for canon, syns in ext_synonyms.items():
+                if ext == canon or ext in syns:
+                    if canon in ext_to_mime:
+                        canonical = canon
+                        break
+        if canonical is None:
+            continue
+        mime = ext_to_mime[canonical]
+        out[mime] = defaults[mime]
     return out or defaults
 
 

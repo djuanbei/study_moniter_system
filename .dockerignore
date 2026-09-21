@@ -1,0 +1,47 @@
+# 学习陪伴系统 - Docker build excludes
+# docker-compose mounts the entire repo into the container and rebuilds
+# inside it; nothing is pre-built on the host, so .venv / node_modules
+# at the host aren't used at runtime. Keep them out of any future COPY.
+
+.git
+.gitattributes
+.gitignore
+.github
+.idea
+.vscode
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Frontend
+node_modules/
+dist/
+.vite/
+
+# Local config / runtime
+.env
+.env.local
+configure.json
+data/
+uploads/
+logs/
+backups/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Docs (no need inside container)
+*.md
+project_PRD.md
+README.md
+LICENSE

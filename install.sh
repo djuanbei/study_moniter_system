@@ -200,6 +200,45 @@ if [ -z "$pw_value" ] || [ "${#pw_value}" -lt 8 ]; then
   die "PASS_WORD is missing or too short in .env. Set PASS_WORD=<min 8 chars> and re-run install."
 fi
 
+# Warn if SECRET_KEY is left at the example value — sessions are signed with it
+# (PRD §85). Use openssl if available to generate a strong replacement.
+secret_key_value() {
+  grep -E '^SECRET_KEY=' "$PROJECT_ROOT/.env" 2>/dev/null | head -1 \
+    | sed -E 's/^SECRET_KEY=//' | tr -d '"'"'" || true
+}
+sk_value="$(secret_key_value)"
+if [ -z "$sk_value" ] || [ "$sk_value" = "change-me-to-a-long-random-string" ]; then
+  warn "SECRET_KEY is unset or still the example placeholder."
+  warn "Session cookies are signed with it — leaving the default is a security risk (PRD §85)."
+  if command -v openssl >/dev/null 2>&1; then
+    new_sk="$(openssl rand -base64 48 | tr -d '\n')"
+    if grep -qE '^SECRET_KEY=' "$PROJECT_ROOT/.env"; then
+      tmp="$(mktemp "${PROJECT_ROOT}/.env.XXXXXX")"
+      chmod 600 "$tmp"
+      SK="$new_sk" DOTENV="$PROJECT_ROOT/.env" OUT="$tmp" python3 - <<'PY' 2>/dev/null || true
+import os, pathlib
+sk, path, out = os.environ["SK"], pathlib.Path(os.environ["DOTENV"]), pathlib.Path(os.environ["OUT"])
+lines = path.read_text().splitlines()
+new_lines = []
+for ln in lines:
+    if ln.startswith("SECRET_KEY="):
+        new_lines.append(f"SECRET_KEY={sk}")
+    else:
+        new_lines.append(ln)
+out.write_text("\n".join(new_lines) + "\n")
+PY
+      mv "$tmp" "$PROJECT_ROOT/.env"
+    else
+      printf "\nSECRET_KEY=%s\n" "$new_sk" >> "$PROJECT_ROOT/.env"
+    fi
+    chmod 600 "$PROJECT_ROOT/.env"
+    echo "Generated a random SECRET_KEY (48 bytes, base64) and wrote it to .env."
+  else
+    warn "openssl not found — generate one manually with 'openssl rand -base64 48'"
+    warn "and set SECRET_KEY=... in $PROJECT_ROOT/.env before starting the backend."
+  fi
+fi
+
 # --- configure.json ---------------------------------------------------------
 
 step "Preparing configure.json"
